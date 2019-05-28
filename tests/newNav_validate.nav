@@ -1,0 +1,146 @@
+AdocVersion = 2.00
+
+[Item = 9000]
+Color = 0
+NumPts = 1
+Regis = 6
+Type = 0
+PtsX = 1732
+PtsY = 1229
+DrawnID = 1357591511
+GroupID = 0
+Acquire = 1
+CoordsInMap = 1732 1229 31.9355
+
+[Item = 9001]
+Color = 0
+NumPts = 1
+Regis = 6
+Type = 0
+PtsX = 1769
+PtsY = 1044
+DrawnID = 1357591511
+GroupID = 0
+Acquire = 1
+CoordsInMap = 1769 1044 31.9355
+
+[Item = 9002]
+Color = 0
+NumPts = 1
+Regis = 6
+Type = 0
+PtsX = 2095
+PtsY = 1311
+DrawnID = 1357591511
+GroupID = 0
+Acquire = 1
+CoordsInMap = 2095 1311 31.9355
+
+[Item = 9003]
+Color = 0
+NumPts = 1
+Regis = 6
+Type = 0
+PtsX = 2239
+PtsY = 1535
+DrawnID = 1357591511
+GroupID = 0
+Acquire = 1
+CoordsInMap = 2239 1535 31.9355
+
+[Item = 9004]
+Color = 0
+NumPts = 1
+Regis = 6
+Type = 0
+PtsX = 2019
+PtsY = 1680
+DrawnID = 1357591511
+GroupID = 0
+Acquire = 1
+CoordsInMap = 2019 1680 31.9355
+
+[Item = 9005]
+Color = 0
+NumPts = 1
+Regis = 6
+Type = 0
+PtsX = 2149
+PtsY = 1904
+DrawnID = 1357591511
+GroupID = 0
+Acquire = 1
+CoordsInMap = 2149 1904 31.9355
+
+[Item = 9006]
+Color = 0
+NumPts = 1
+Regis = 6
+Type = 0
+PtsX = 2111
+PtsY = 2088
+DrawnID = 1357591511
+GroupID = 0
+Acquire = 1
+CoordsInMap = 2111 2088 31.9355
+
+[Item = 9007]
+Color = 0
+NumPts = 1
+Regis = 6
+Type = 0
+PtsX = 2293
+PtsY = 2128
+DrawnID = 1357591511
+GroupID = 0
+Acquire = 1
+CoordsInMap = 2293 2128 31.9355
+
+[Item = 9008]
+Color = 0
+NumPts = 1
+Regis = 6
+Type = 0
+PtsX = 2598
+PtsY = 1633
+DrawnID = 1357591511
+GroupID = 0
+Acquire = 1
+CoordsInMap = 2598 1633 31.9355
+
+[Item = 9009]
+Color = 0
+NumPts = 1
+Regis = 6
+Type = 0
+PtsX = 2637
+PtsY = 1448
+DrawnID = 1357591511
+GroupID = 0
+Acquire = 1
+CoordsInMap = 2637 1448 31.9355
+
+[Item = 9010]
+Color = 0
+NumPts = 1
+Regis = 6
+Type = 0
+PtsX = 2819
+PtsY = 1488
+DrawnID = 1357591511
+GroupID = 0
+Acquire = 1
+CoordsInMap = 2819 1488 31.9355
+
+[Item = 9011]
+Color = 0
+NumPts = 1
+Regis = 6
+Type = 0
+PtsX = 2897
+PtsY = 1120
+DrawnID = 1357591511
+GroupID = 0
+Acquire = 1
+CoordsInMap = 2897 1120 31.9355
+

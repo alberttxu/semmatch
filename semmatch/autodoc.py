@@ -1,4 +1,4 @@
-from semmatch.groups import greedyPathThroughPts
+from semmatch.groups import greedyPathThroughPts, makeGroupsOfPoints
 
 class NavFilePoint:
 

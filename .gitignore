@@ -1,4 +1,7 @@
+*~
+*.swp
+*.swo
 env/
 testenv/
 scratch/
-semmatch/__pycache__
+*/__pycache__
