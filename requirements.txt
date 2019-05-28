@@ -1,0 +1,10 @@
+altgraph==0.16.1
+future==0.16.0
+macholib==1.10
+numpy==1.15.0
+opencv-python==4.1.0.25
+pefile==2017.11.5
+Pillow==5.2.0
+PyQt5==5.11.2
+PyQt5-sip==4.19.12
+scipy==1.1.0

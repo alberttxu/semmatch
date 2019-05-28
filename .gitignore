@@ -1,0 +1,4 @@
+env/
+testenv/
+scratch/
+semmatch/__pycache__
