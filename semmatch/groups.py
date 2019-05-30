@@ -1,3 +1,4 @@
+import numpy as np
 from semmatch.templateMatch import squareDist
 
 def centroid(pts: 'ndarray'):
