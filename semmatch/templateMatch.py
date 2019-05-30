@@ -34,6 +34,8 @@ def templateMatch(image, template, threshold=0.8, downSample: int = 1):
     Images can be downsampled for faster computation and noise reduction.
     """
 
+    image = image[:,:,0]
+    template = template[:,:,0]
     image = image[::downSample,::downSample]
     template = template[::downSample,::downSample]
 
