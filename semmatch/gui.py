@@ -1,4 +1,5 @@
 import io
+import os
 import sys
 import cv2
 import numpy as np
@@ -237,12 +238,19 @@ class Sidebar(QWidget):
         buttonPrintCoord.clicked.connect(self.printCoordinates)
         buttonClearPts = QPushButton('Clear Points')
         buttonClearPts.clicked.connect(self._clearPts)
+        '''
         buttonNewNavFile = QPushButton('Generate new nav file')
         buttonNewNavFile.resize(buttonNewNavFile.sizeHint())
         buttonNewNavFile.clicked.connect(self.generateNavFile)
         buttonAppendNav = QPushButton('Append to new nav file')
         buttonAppendNav.resize(buttonNewNavFile.sizeHint())
         buttonAppendNav.clicked.connect(self.appendToNavFile)
+        '''
+
+        buttonNewNavFile = QPushButton('Write to output nav file')
+        buttonNewNavFile.resize(buttonNewNavFile.sizeHint())
+        buttonNewNavFile.clicked.connect(self.generateNavFile)
+
         self.cbAcquire = QCheckBox('Acquire')
         self.cbAcquire.setCheckState(Qt.Checked)
         self.cmboxGroupPts = QComboBox()
@@ -277,7 +285,9 @@ class Sidebar(QWidget):
         vlay.addWidget(buttonClearPts)
         vlay.addWidget(QLabel())
         vlay.addWidget(buttonNewNavFile)
+        '''
         vlay.addWidget(buttonAppendNav)
+        '''
         vlay.addWidget(self.cbAcquire)
         vlay.addWidget(QLabel('Grouping option'))
         vlay.addWidget(self.cmboxGroupPts)
@@ -349,8 +359,8 @@ class Sidebar(QWidget):
 
     def _writeToNavFile(self, isNew):
         # error checking
-        navfileLines = self.parentWidget().parentWidget().navfileLines
-        if not navfileLines: # not loaded in
+        navData = self.parentWidget().parentWidget().getNavData()
+        if not navData: # not loaded in
             print("navfile not loaded in")
             popup(self, "navfile not loaded in")
             return
@@ -358,11 +368,13 @@ class Sidebar(QWidget):
             print("need to generate a new nav file first")
             popup(self, "need to generate a new nav file first")
             return
+
+        '''
         mapLabel, okClicked = QInputDialog.getText(self, "label number",
                                           "enter label # of map to merge onto",
                                           text=self.lastMapLabel)
         if not okClicked: return
-        if not isValidLabel(navfileLines, mapLabel):
+        if not isValidLabel(navData, mapLabel):
             popup(self, "label not found")
             return
         startLabel, okClicked = QInputDialog.getInt(self, "label number",
@@ -370,13 +382,19 @@ class Sidebar(QWidget):
                                           value=self.lastStartLabel
                                                 + self.lastGroupSize)
         if not okClicked: return
+
         if isNew:
             filename = QFileDialog.getSaveFileName(self, "Save points",
                                                    filter="*.nav")[0]
             if filename == '' : return
+        '''
+
+        filename = self.outputNavfile
+        mapLabel = self.mapLabel
+        startLabel = int(self.newLabel)
 
         # write to file
-        mapSection = sectionToDict(navfileLines, mapLabel)
+        mapSection = sectionToDict(navData, mapLabel)
         groupRadiusPixels = 1000 * self.groupRadius / self.pixelSizeNm
         acquire = int(self.cbAcquire.isChecked())
         groupOpt = self.cmboxGroupPts.currentIndex()
@@ -384,9 +402,12 @@ class Sidebar(QWidget):
         # correct defocus
         img = self.parentWidget().viewer.originalImg
         pivot = (img.width() // 2, img.height() // 2)
+        '''
         correctedCoords = defocusCorrectedCoords(self.coords, pivot, semmatch.theta,
                                                                      semmatch.scale)
-        navPoints, numGroups = coordsToNavPoints(correctedCoords, mapSection,
+        '''
+        #navPoints, numGroups = coordsToNavPoints(correctedCoords, mapSection,
+        navPoints, numGroups = coordsToNavPoints(self.coords, mapSection,
                                                  startLabel, acquire, groupOpt,
                                                  groupRadiusPixels)
 
@@ -455,6 +476,52 @@ class MainWidget(QWidget):
         grid.addWidget(self.viewer, 1, 1, 5, 5)
         self.setLayout(grid)
 
+    def openImage(self, image):
+        self.viewer.openFile(image)
+
+    def setTemplate(self, template):
+        if os.path.isfile(template):
+            self.sidebar.crop_template.newImg(QImage(template))
+        else:
+            popup(self, "template image %s not found" % template)
+
+    def setThreshold(self, threshold):
+        self.sidebar.threshDisp.setValue(threshold)
+
+    def setGroupOption(self, option, radius=None, pixelSize=None):
+        self.sidebar.cmboxGroupPts.setCurrentIndex(option)
+        self.sidebar._selectGroupOption(option)
+        if option == 1:
+            self.sidebar._setGroupRadius(str(radius))
+            self.sidebar._setPixelSize(str(pixelSize))
+
+    def setAcquire(self, acquire):
+        self.sidebar.cbAcquire.setCheckState(Qt.Checked if acquire
+                                                        else Qt.Unchecked)
+
+
+class NavfileHandler():
+
+    def __init__(self):
+        self.navfile = ''
+        self.data = []
+
+    def open(self, navfile):
+        print(navfile)
+        if not navfile: return
+        if isValidAutodoc(navfile):
+            self.navfile = navfile
+            with open(navfile) as f:
+                lines = [line.strip() for line in f.readlines()]
+                self.data = lines
+            return 0
+        else:
+            return 1
+
+    def dialogOpen(self):
+        navfile = QFileDialog.getOpenFileName(self, 'Load Nav File')[0]
+        self.openNavfile(navfile)
+
 
 class MainWindow(QMainWindow):
 
@@ -464,8 +531,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.root)
         self.statusBar()
         self.initUI()
-        self.navfile = ''
-        self.navfileLines = []
+        self.navfile = NavfileHandler()
 
     def initUI(self):
         menubar = self.menuBar()
@@ -506,22 +572,59 @@ class MainWindow(QMainWindow):
                 popup(self, "could not load image")
 
     def navFileDialog(self):
-        navfile = QFileDialog.getOpenFileName(self, 'Load Nav File')[0]
-        print(navfile)
-        if not navfile: return
-        if isValidAutodoc(navfile):
-            popup(self, "successfully read in navfile")
-            self.navfile = navfile
-            with open(navfile) as f:
-                lines = [line.strip() for line in f.readlines()]
-                self.navfileLines = lines
+        self.navfile.dialogOpen()
+
+    def openNavfile(self, navfile):
+        if self.navfile.open(navfile):
+            popup(self, "could not read in nav file: %s" % navfile)
         else:
-            popup(self, "could not read in nav file")
-            return
+            popup(self, "successfully read in navfile")
+
+    def getNavData(self):
+        return self.navfile.data
+
+    def openImage(self, image):
+        self.root.openImage(image)
+
+    def setTemplate(self, template):
+        self.root.setTemplate(template)
+
+    def setThreshold(self, threshold):
+        self.root.setThreshold(threshold)
+
+    def setGroupOption(self, option, radius=None, pixelSize=None):
+        self.root.setGroupOption(option, radius, pixelSize)
+
+    def setAcquire(self, acquire):
+        self.root.setAcquire(acquire)
 
 
-def main():
-    app = QApplication(sys.argv)
+def main(navfile, image, mapLabel, newLabel, output, template=None, threshold=None,
+        groupOption=None, groupRadius=None, pixelSize=None, acquire=False):
+    app = QApplication([])
     w = MainWindow()
+    w.openNavfile(navfile)
+    if not isValidLabel(w.getNavData(), mapLabel):
+        popup(w, "label %s not found" % mapLabel)
+    w.openImage(image)
+
+    if template:
+        w.setTemplate(template)
+
+    if threshold:
+        threshold = float(threshold)
+        if threshold < 0 or threshold > 1:
+            raise ValueError("threshold %f not in range 0 to 1" % threshold)
+        w.setThreshold(threshold)
+
+    if groupOption:
+        groupOption = int(groupOption)
+        w.setGroupOption(groupOption, groupRadius, pixelSize)
+
+    w.setAcquire(acquire)
+    w.root.sidebar.newLabel = newLabel
+    w.root.sidebar.mapLabel = mapLabel
+    w.root.sidebar.outputNavfile = output
+
     sys.exit(app.exec_())
 

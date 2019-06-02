@@ -47,7 +47,7 @@ def isValidLabel(data: 'list', label: str):
     try:
         mapSectionIndex = data.index(f"[Item = {label}]")
     except:
-        print("unable to write new autodoc file: label not found")
+        print("unable to write new autodoc file: label %s not found" % label)
         return False
     return True
 
