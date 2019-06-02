@@ -23,6 +23,9 @@ def greedyPathThroughPts(coords):
     """Returns a list with the first item being the left most coordinate,
        and successive items being the minimum distance from the previous item.
     """
+    if coords == []:
+        return []
+
     coords = [tuple(pt) for pt in coords]
     leftMostPt = sorted(coords, key=lambda x: x[0])[0]
     unvisitedPts = set(coords)
