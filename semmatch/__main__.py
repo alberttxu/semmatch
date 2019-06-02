@@ -22,8 +22,8 @@ def main():
 
     # optional
     parser.add_argument('-A', '--acquire', help='', action='store_true')
-    #parser.add_argument('--calibRotate', help='defocus angle correction')
-    #parser.add_argument('--calibScale', help='defocus scale correction')
+    parser.add_argument('--calibRotate', help='defocus angle correction', default=0)
+    parser.add_argument('--calibScale', help='defocus scale correction', default=1)
 
     args = parser.parse_args()
     print(args)
@@ -38,7 +38,7 @@ def main():
         semmatch.gui.main(args.navfile, args.image, args.mapLabel, args.newLabel,
                           args.output, args.template, args.threshold,
                           args.groupOption, args.groupRadius, args.pixelSize,
-                          args.acquire)
+                          args.acquire, args.calibRotate, args.calibScale)
 
     else:
         # import templateMatch et al.

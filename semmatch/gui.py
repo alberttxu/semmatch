@@ -238,15 +238,6 @@ class Sidebar(QWidget):
         buttonPrintCoord.clicked.connect(self.printCoordinates)
         buttonClearPts = QPushButton('Clear Points')
         buttonClearPts.clicked.connect(self._clearPts)
-        '''
-        buttonNewNavFile = QPushButton('Generate new nav file')
-        buttonNewNavFile.resize(buttonNewNavFile.sizeHint())
-        buttonNewNavFile.clicked.connect(self.generateNavFile)
-        buttonAppendNav = QPushButton('Append to new nav file')
-        buttonAppendNav.resize(buttonNewNavFile.sizeHint())
-        buttonAppendNav.clicked.connect(self.appendToNavFile)
-        '''
-
         buttonNewNavFile = QPushButton('Write to output nav file')
         buttonNewNavFile.resize(buttonNewNavFile.sizeHint())
         buttonNewNavFile.clicked.connect(self.generateNavFile)
@@ -285,9 +276,6 @@ class Sidebar(QWidget):
         vlay.addWidget(buttonClearPts)
         vlay.addWidget(QLabel())
         vlay.addWidget(buttonNewNavFile)
-        '''
-        vlay.addWidget(buttonAppendNav)
-        '''
         vlay.addWidget(self.cbAcquire)
         vlay.addWidget(QLabel('Grouping option'))
         vlay.addWidget(self.cmboxGroupPts)
@@ -369,26 +357,6 @@ class Sidebar(QWidget):
             popup(self, "need to generate a new nav file first")
             return
 
-        '''
-        mapLabel, okClicked = QInputDialog.getText(self, "label number",
-                                          "enter label # of map to merge onto",
-                                          text=self.lastMapLabel)
-        if not okClicked: return
-        if not isValidLabel(navData, mapLabel):
-            popup(self, "label not found")
-            return
-        startLabel, okClicked = QInputDialog.getInt(self, "label number",
-                                          "enter starting label of new items",
-                                          value=self.lastStartLabel
-                                                + self.lastGroupSize)
-        if not okClicked: return
-
-        if isNew:
-            filename = QFileDialog.getSaveFileName(self, "Save points",
-                                                   filter="*.nav")[0]
-            if filename == '' : return
-        '''
-
         filename = self.outputNavfile
         mapLabel = self.mapLabel
         startLabel = int(self.newLabel)
@@ -402,12 +370,10 @@ class Sidebar(QWidget):
         # correct defocus
         img = self.parentWidget().viewer.originalImg
         pivot = (img.width() // 2, img.height() // 2)
-        '''
-        correctedCoords = defocusCorrectedCoords(self.coords, pivot, semmatch.theta,
-                                                                     semmatch.scale)
-        '''
-        #navPoints, numGroups = coordsToNavPoints(correctedCoords, mapSection,
-        navPoints, numGroups = coordsToNavPoints(self.coords, mapSection,
+        theta = self.calibRotate
+        scale = self.calibScale
+        correctedCoords = defocusCorrectedCoords(self.coords, pivot, theta, scale)
+        navPoints, numGroups = coordsToNavPoints(correctedCoords, mapSection,
                                                  startLabel, acquire, groupOpt,
                                                  groupRadiusPixels)
 
@@ -600,7 +566,8 @@ class MainWindow(QMainWindow):
 
 
 def main(navfile, image, mapLabel, newLabel, output, template=None, threshold=None,
-        groupOption=None, groupRadius=None, pixelSize=None, acquire=False):
+        groupOption=None, groupRadius=None, pixelSize=None, acquire=False,
+        calibRotate=0, calibScale=1):
     app = QApplication([])
     w = MainWindow()
     w.openNavfile(navfile)
@@ -625,6 +592,8 @@ def main(navfile, image, mapLabel, newLabel, output, template=None, threshold=No
     w.root.sidebar.newLabel = newLabel
     w.root.sidebar.mapLabel = mapLabel
     w.root.sidebar.outputNavfile = output
+    w.root.sidebar.calibRotate = float(calibRotate)
+    w.root.sidebar.calibScale = float(calibScale)
 
     sys.exit(app.exec_())
 
