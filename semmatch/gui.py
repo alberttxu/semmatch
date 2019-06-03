@@ -3,8 +3,8 @@ import os
 import sys
 import cv2
 import numpy as np
-from PIL import Image, ImageFilter
-from PIL.ImageQt import ImageQt
+import PIL
+import PIL.ImageQt
 from PyQt5.QtCore import Qt, QRect, QSize, QBuffer
 from PyQt5.QtWidgets import (QApplication, QWidget, QMainWindow, QAction,
                              QHBoxLayout, QVBoxLayout, QGridLayout, QLabel,
@@ -17,17 +17,18 @@ from semmatch.templateMatch import templateMatch, defocusCorrectedCoords
 from semmatch.autodoc import isValidAutodoc, isValidLabel, sectionToDict, coordsToNavPoints
 
 # Unset PIL max size
-Image.MAX_IMAGE_PIXELS = None
+PIL.Image.MAX_IMAGE_PIXELS = None
 
 # image data manipulation
 def npToQImage(ndArr):
-    return QPixmap.fromImage(ImageQt(Image.fromarray(ndArr))).toImage()
+    pilImageQt = PIL.ImageQt.ImageQt(PIL.Image.fromarray(ndArr))
+    return QPixmap.fromImage(pilImageQt).toImage()
 
 def qImgToPilRGBA(qimg):
     buf = QBuffer()
     buf.open(QBuffer.ReadWrite)
     qimg.save(buf, "PNG")
-    return Image.open(io.BytesIO(buf.data().data())).convert('RGBA')
+    return PIL.Image.open(io.BytesIO(buf.data().data())).convert('RGBA')
 
 def qImgToNp(qimg):
     return np.array(qImgToPilRGBA(qimg))
@@ -554,8 +555,8 @@ def main(navfile, image, mapLabel, newLabel, output, template=None, threshold=No
     w.root.sidebar.newLabel = newLabel
     w.root.sidebar.mapLabel = mapLabel
     w.root.sidebar.outputNavfile = output
-    #w.root.sidebar.calibRotate = float(calibRotate)
-    #w.root.sidebar.calibScale = float(calibScale)
+    w.root.sidebar.calibRotate = float(calibRotate)
+    w.root.sidebar.calibScale = float(calibScale)
 
     sys.exit(app.exec_())
 
