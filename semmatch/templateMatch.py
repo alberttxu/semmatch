@@ -21,7 +21,8 @@ def pointsExistWithinRadius(center, coords, radius):
 
 # modified from OpenCV docs
 # https://docs.opencv.org/3.4/d4/dc6/tutorial_py_template_matching.html
-def templateMatch(image, template, threshold=0.8, downSample: int = 1):
+def templateMatch(image, template, threshold, downSample: int = 1,
+        blurImage=False, blurTemplate=False):
     """Return a list of (x,y) pixel coordinates where cross-correlation between
     the image and template surpass the threshold value.
 
@@ -38,6 +39,10 @@ def templateMatch(image, template, threshold=0.8, downSample: int = 1):
     template = template[:,:,0]
     image = image[::downSample,::downSample]
     template = template[::downSample,::downSample]
+    if blurImage:
+        image = gaussian_filter(image, sigma=1)
+    if blurTemplate:
+        template = gaussian_filter(template, sigma=1)
 
     # flip both arrays upsidedown for coordinate conventions
     image = np.flip(image, 0).copy()

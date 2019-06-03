@@ -32,10 +32,6 @@ def qImgToPilRGBA(qimg):
 def qImgToNp(qimg):
     return np.array(qImgToPilRGBA(qimg))
 
-def gaussianBlur(qimg, radius=5):
-    pilImg = qImgToPilRGBA(qimg).filter(ImageFilter.GaussianBlur(radius))
-    return QPixmap.fromImage(ImageQt(pilImg)).toImage()
-
 def drawCross(img: 'ndarray', x, y):
     red = (255,0,0,255)
     cv2.line(img, (x-15,y), (x+15,y), red, 3)
@@ -66,7 +62,6 @@ class ImageViewer(QScrollArea):
     def initUI(self):
         self.zoom = 1
         self.originalImg = QImage()
-        self.blurredImg = QImage()
         self.activeImg = QImage()
 
         # need QLabel to setPixmap for images
@@ -100,14 +95,7 @@ class ImageViewer(QScrollArea):
     def newImg(self, img):
         self.zoom = 1
         self.originalImg = img
-        self.blurredImg = gaussianBlur(self.originalImg)
         self._setActiveImg(self.originalImg)
-
-    def toggleBlur(self, toggle):
-        if toggle:
-            self._setActiveImg(self.blurredImg)
-        else:
-            self._setActiveImg(self.originalImg)
 
     def zoomIn(self):
         self.zoom *= 1.25
@@ -134,23 +122,12 @@ class ImageViewerCrop(ImageViewer):
     def __init__(self):
         super().__init__()
         self.searchedImg = QImage()
-        self.searchedBlurImg = QImage()
 
     def openFile(self, filename):
         self.zoom = 1
         self.originalImg.load(filename)
-        self.blurredImg = gaussianBlur(self.originalImg)
         self.parentWidget().sidebar._clearPts()
         self.parentWidget().parentWidget().setWindowTitle(filename)
-
-    def toggleBlur(self, toggle):
-        if self.parentWidget().sidebar.coords:
-            if toggle:
-                self._setActiveImg(self.searchedBlurImg)
-            else:
-                self._setActiveImg(self.searchedImg)
-        else:
-            super().toggleBlur(toggle)
 
     def mousePressEvent(self, mouseEvent):
         self.shiftPressed = QApplication.keyboardModifiers() == Qt.ShiftModifier
@@ -189,7 +166,6 @@ class ImageViewerCrop(ImageViewer):
         cropQImage = self.originalImg.copy(QRect(X, Y, origScaleCropWidth,
                                                          origScaleCropHeight))
         sidebar = self.parentWidget().sidebar
-        sidebar.cbBlurTemp.setCheckState(Qt.Unchecked)
         sidebar.crop_template.newImg(cropQImage)
 
 
@@ -217,9 +193,7 @@ class Sidebar(QWidget):
         self.crop_template = ImageViewer()
         self.crop_template.setFixedHeight(200)
         self.cbBlurTemp = QCheckBox('Blur template')
-        self.cbBlurTemp.clicked.connect(self.blurTemp)
         self.cbBlurImg  = QCheckBox('Blur image')
-        self.cbBlurImg.clicked.connect(self.blurImg)
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMaximum(10**self.sldPrec)
         self.slider.valueChanged.connect(self._setThreshDisp)
@@ -291,12 +265,6 @@ class Sidebar(QWidget):
         vlay.addStretch(1)
         self.setLayout(vlay)
 
-    def blurTemp(self):
-        self.crop_template.toggleBlur(self.cbBlurTemp.isChecked())
-
-    def blurImg(self):
-        self.parentWidget().viewer.toggleBlur(self.cbBlurImg.isChecked())
-
     def _setThreshDisp(self, i: int):
         self.threshDisp.setValue(i / 10**self.sldPrec)
 
@@ -308,23 +276,20 @@ class Sidebar(QWidget):
             pass
 
     def _templateSearch(self):
-        templ = (self.crop_template.blurredImg if self.cbBlurTemp.isChecked()
-                    else self.crop_template.originalImg)
-        img = (self.parentWidget().viewer.blurredImg
-               if self.cbBlurImg.isChecked()
-               else self.parentWidget().viewer.originalImg)
-        if img.isNull() or templ.isNull():
+        template = self.crop_template.originalImg
+        image = self.parentWidget().viewer.originalImg
+        if image.isNull() or template.isNull():
             popup(self, "either image or template missing")
             return
 
-        self.coords = templateMatch(qImgToNp(img), qImgToNp(templ),
-                                self.thresholdVal)
+        self.coords = templateMatch(qImgToNp(image),
+                                    qImgToNp(template),
+                                    self.thresholdVal,
+                                    blurImage=self.cbBlurImg.isChecked(),
+                                    blurTemplate=self.cbBlurTemp.isChecked())
         viewer = self.parentWidget().viewer
         viewer.searchedImg = drawCoords(viewer.originalImg, self.coords)
-        viewer.searchedBlurImg = drawCoords(viewer.blurredImg, self.coords)
-        viewer._setActiveImg(viewer.searchedBlurImg
-                             if self.cbBlurImg.isChecked()
-                             else viewer.searchedImg)
+        viewer._setActiveImg(viewer.searchedImg)
         self.repaint()
 
     def printCoordinates(self):
@@ -332,11 +297,9 @@ class Sidebar(QWidget):
 
     def _clearPts(self):
         self.coords = []
-        self.cbBlurImg.setCheckState(Qt.Unchecked)
         viewer = self.parentWidget().viewer
         viewer._setActiveImg(viewer.originalImg)
         viewer.searchedImg = QImage()
-        viewer.searchedBlurImg = QImage()
         viewer._refresh()
 
     def generateNavFile(self):
@@ -533,7 +496,6 @@ class MainWindow(QMainWindow):
         if filename:
             try:
                 self.root.viewer.openFile(filename)
-                self.root.sidebar.cbBlurImg.setCheckState(Qt.Unchecked)
             except:
                 popup(self, "could not load image")
 
@@ -592,8 +554,8 @@ def main(navfile, image, mapLabel, newLabel, output, template=None, threshold=No
     w.root.sidebar.newLabel = newLabel
     w.root.sidebar.mapLabel = mapLabel
     w.root.sidebar.outputNavfile = output
-    w.root.sidebar.calibRotate = float(calibRotate)
-    w.root.sidebar.calibScale = float(calibScale)
+    #w.root.sidebar.calibRotate = float(calibRotate)
+    #w.root.sidebar.calibScale = float(calibScale)
 
     sys.exit(app.exec_())
 
