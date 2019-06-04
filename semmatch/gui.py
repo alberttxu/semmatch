@@ -3,6 +3,8 @@ import os
 import sys
 import cv2
 import numpy as np
+import scipy.misc
+import imageio
 import PIL
 import PIL.ImageQt
 from PyQt5.QtCore import Qt, QRect, QSize, QBuffer
@@ -52,6 +54,30 @@ def popup(parent, message):
     messagebox = QMessageBox(parent)
     messagebox.setText(message)
     messagebox.show()
+
+
+class ImageHandler():
+
+    MAX_DIM_BEFORE_DOWNSCALE = 2000
+
+    def __init__(self, filename):
+        #data = scipy.misc.imread(filename, flatten=True)
+        #data = imageio.imread(filename, as_gray=True)
+        data = imageio.imread(filename)
+        max_dimension = max(data.shape)
+        if max_dimension > self.MAX_DIM_BEFORE_DOWNSCALE:
+            self.downscale = float(max_dimension / self.MAX_DIM_BEFORE_DOWNSCALE)
+            self.downscaled_data = scipy.misc.imresize(data, 1 / self.downscale)
+        else:
+            self.downscale = 1
+            self.downscaled_data = data
+
+    def toQImage(self):
+        return npToQImage(self.downscaled_data)
+
+    def toOrigCoord(self, pt: "(x,y)"):
+        '''return full scale coordinate'''
+        return (int(self.downscale * pt[0]), int(self.downscale * pt[1]))
 
 
 class ImageViewer(QScrollArea):
@@ -122,11 +148,14 @@ class ImageViewerCrop(ImageViewer):
 
     def __init__(self):
         super().__init__()
+        self.image = None
         self.searchedImg = QImage()
 
     def openFile(self, filename):
         self.zoom = 1
-        self.originalImg.load(filename)
+        self.image = ImageHandler(filename)
+        #self.originalImg.load(filename)
+        self.originalImg = self.image.toQImage()
         self.parentWidget().sidebar._clearPts()
         self.parentWidget().parentWidget().setWindowTitle(filename)
 
@@ -294,7 +323,9 @@ class Sidebar(QWidget):
         self.repaint()
 
     def printCoordinates(self):
-        popup(self, f"{len(self.coords)} points: {str(self.coords)}")
+        imagehandler = self.parentWidget().viewer.image
+        coords = [imagehandler.toOrigCoord(pt) for pt in self.coords]
+        popup(self, f"{len(coords)} points: {str(coords)}")
 
     def _clearPts(self):
         self.coords = []
@@ -332,11 +363,14 @@ class Sidebar(QWidget):
         groupOpt = self.cmboxGroupPts.currentIndex()
 
         # correct defocus
+        imagehandler = self.parentWidget().viewer.image
+        downscale = imagehandler.downscale
+        coords = [imagehandler.toOrigCoord(pt) for pt in self.coords]
         img = self.parentWidget().viewer.originalImg
-        pivot = (img.width() // 2, img.height() // 2)
+        pivot = (int(downscale * img.width() / 2), int(downscale * img.height() // 2))
         theta = self.calibRotate
         scale = self.calibScale
-        correctedCoords = defocusCorrectedCoords(self.coords, pivot, theta, scale)
+        correctedCoords = defocusCorrectedCoords(coords, pivot, theta, scale)
         navPoints, numGroups = coordsToNavPoints(correctedCoords, mapSection,
                                                  startLabel, acquire, groupOpt,
                                                  groupRadiusPixels)
