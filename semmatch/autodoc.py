@@ -90,10 +90,12 @@ def coordsToNavPoints(coords, mapSection: 'Dict', startLabel: int, acquire,
                 subLabel += 1
             label += 1
     elif groupOpt == 2: # entire mesh as group
+        groupID = id(coords)
         subLabel = 1
         for pt in greedyPathThroughPts(coords):
             navPoints.append(NavFilePoint(f"{label}-{subLabel}", regis, *pt,
-                                          zHeight, drawnID, acquire=acquire))
+                                          zHeight, drawnID, groupID=groupID,
+                                          acquire=acquire))
             subLabel += 1
         label += 1
 
