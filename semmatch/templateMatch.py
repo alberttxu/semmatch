@@ -35,8 +35,10 @@ def templateMatch(image, template, threshold, downSample: int = 1,
     Images can be downsampled for faster computation and noise reduction.
     """
 
-    image = image[:,:,0]
-    template = template[:,:,0]
+    if len(image.shape) == 3:
+        image = image[:,:,0]
+    if len(template.shape) == 3:
+        template = template[:,:,0]
     image = image[::downSample,::downSample]
     template = template[::downSample,::downSample]
     if blurImage:
