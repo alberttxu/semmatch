@@ -367,7 +367,7 @@ class Sidebar(QWidget):
         downscale = imagehandler.downscale
         coords = [imagehandler.toOrigCoord(pt) for pt in self.coords]
         img = self.parentWidget().viewer.originalImg
-        pivot = (int(downscale * img.width() / 2), int(downscale * img.height() // 2))
+        pivot = (int(downscale * img.width() / 2), int(downscale * img.height() / 2))
         theta = self.calibRotate
         scale = self.calibScale
         correctedCoords = defocusCorrectedCoords(coords, pivot, theta, scale)
