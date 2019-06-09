@@ -1,23 +1,26 @@
 import numpy as np
 from semmatch.templateMatch import squareDist
 
-def centroid(pts: 'ndarray'):
+
+def centroid(pts: "ndarray"):
     length = pts.shape[0]
     sum_x = np.sum(pts[:, 0])
     sum_y = np.sum(pts[:, 1])
-    return sum_x/length, sum_y/length
+    return sum_x / length, sum_y / length
+
 
 def closestPtToCentroid(pts):
     """Returns the coordinate closest to the center of mass"""
     center = centroid(np.array(pts))
     closestPoint = pts[0]
-    msd = squareDist(pts[0], center) # min square distance
+    msd = squareDist(pts[0], center)  # min square distance
     for pt in pts:
         dist_2 = squareDist(pt, center)
         if dist_2 < msd:
             closestPoint = pt
             msd = dist_2
     return closestPoint
+
 
 def greedyPathThroughPts(coords):
     """Returns a list with the first item being the left most coordinate,
@@ -44,6 +47,7 @@ def greedyPathThroughPts(coords):
         result.append(closestPtToPrev)
         unvisitedPts.remove(closestPtToPrev)
     return result
+
 
 def makeGroupsOfPoints(pts, max_radius):
     max_radius_2 = max_radius ** 2

@@ -8,15 +8,36 @@ import imageio
 import PIL
 import PIL.ImageQt
 from PyQt5.QtCore import Qt, QRect, QSize, QBuffer
-from PyQt5.QtWidgets import (QApplication, QWidget, QMainWindow, QAction,
-                             QHBoxLayout, QVBoxLayout, QGridLayout, QLabel,
-                             QScrollArea, QPushButton, QFileDialog, QCheckBox,
-                             QSlider, QLineEdit, QRubberBand, QMessageBox,
-                             QInputDialog, QDoubleSpinBox, QComboBox)
+from PyQt5.QtWidgets import (
+    QApplication,
+    QWidget,
+    QMainWindow,
+    QAction,
+    QHBoxLayout,
+    QVBoxLayout,
+    QGridLayout,
+    QLabel,
+    QScrollArea,
+    QPushButton,
+    QFileDialog,
+    QCheckBox,
+    QSlider,
+    QLineEdit,
+    QRubberBand,
+    QMessageBox,
+    QInputDialog,
+    QDoubleSpinBox,
+    QComboBox,
+)
 from PyQt5.QtGui import QImage, QPixmap, QKeySequence, QPainter, QBrush, QColor
 import semmatch
 from semmatch.templateMatch import templateMatch, defocusCorrectedCoords
-from semmatch.autodoc import isValidAutodoc, isValidLabel, sectionToDict, coordsToNavPoints
+from semmatch.autodoc import (
+    isValidAutodoc,
+    isValidLabel,
+    sectionToDict,
+    coordsToNavPoints,
+)
 
 # Unset PIL max size
 PIL.Image.MAX_IMAGE_PIXELS = None
@@ -26,28 +47,34 @@ def npToQImage(ndArr):
     pilImageQt = PIL.ImageQt.ImageQt(PIL.Image.fromarray(ndArr))
     return QPixmap.fromImage(pilImageQt).toImage()
 
+
 def qImgToPilRGBA(qimg):
     buf = QBuffer()
     buf.open(QBuffer.ReadWrite)
     qimg.save(buf, "PNG")
-    return PIL.Image.open(io.BytesIO(buf.data().data())).convert('RGBA')
+    return PIL.Image.open(io.BytesIO(buf.data().data())).convert("RGBA")
+
 
 def qImgToNp(qimg):
     return np.array(qImgToPilRGBA(qimg))
 
-def drawCross(img: 'ndarray', x, y):
-    red = (255,0,0,255)
-    cv2.line(img, (x-15,y), (x+15,y), red, 3)
-    cv2.line(img, (x,y-15), (x,y+15), red, 3)
 
-def drawCrosses(img: 'ndarray', coords):
+def drawCross(img: "ndarray", x, y):
+    red = (255, 0, 0, 255)
+    cv2.line(img, (x - 15, y), (x + 15, y), red, 3)
+    cv2.line(img, (x, y - 15), (x, y + 15), red, 3)
+
+
+def drawCrosses(img: "ndarray", coords):
     img = np.flip(img, 0).copy()
     for x, y in coords:
         drawCross(img, x, y)
     return np.flip(img, 0).copy()
 
+
 def drawCoords(qimg, coords):
     return npToQImage(drawCrosses(qImgToNp(qimg), coords))
+
 
 # popup messages
 def popup(parent, message):
@@ -56,13 +83,13 @@ def popup(parent, message):
     messagebox.show()
 
 
-class ImageHandler():
+class ImageHandler:
 
     MAX_DIM_BEFORE_DOWNSCALE = 2000
 
     def __init__(self, filename):
-        #data = scipy.misc.imread(filename, flatten=True)
-        #data = imageio.imread(filename, as_gray=True)
+        # data = scipy.misc.imread(filename, flatten=True)
+        # data = imageio.imread(filename, as_gray=True)
         data = imageio.imread(filename)
         max_dimension = max(data.shape)
         if max_dimension > self.MAX_DIM_BEFORE_DOWNSCALE:
@@ -76,12 +103,11 @@ class ImageHandler():
         return npToQImage(self.downscaled_data)
 
     def toOrigCoord(self, pt: "(x,y)"):
-        '''return full scale coordinate'''
+        """return full scale coordinate"""
         return (int(self.downscale * pt[0]), int(self.downscale * pt[1]))
 
 
 class ImageViewer(QScrollArea):
-
     def __init__(self):
         super().__init__()
         self.initUI()
@@ -107,8 +133,9 @@ class ImageViewer(QScrollArea):
             hBarRatio = 0
             vBarRatio = 0
         # resize
-        img = self.activeImg.scaled(self.zoom * self.activeImg.size(),
-                                    aspectRatioMode=Qt.KeepAspectRatio)
+        img = self.activeImg.scaled(
+            self.zoom * self.activeImg.size(), aspectRatioMode=Qt.KeepAspectRatio
+        )
         self.label.setPixmap(QPixmap(img))
         self.label.resize(img.size())
         self.label.repaint()
@@ -134,9 +161,7 @@ class ImageViewer(QScrollArea):
 
 
 class ImageViewerCrop(ImageViewer):
-
     class ColorRubberBand(QRubberBand):
-
         def __init__(self, shape, parent):
             super().__init__(shape, parent)
 
@@ -154,7 +179,7 @@ class ImageViewerCrop(ImageViewer):
     def openFile(self, filename):
         self.zoom = 1
         self.image = ImageHandler(filename)
-        #self.originalImg.load(filename)
+        # self.originalImg.load(filename)
         self.originalImg = self.image.toQImage()
         self.parentWidget().sidebar._clearPts()
         self.parentWidget().parentWidget().setWindowTitle(filename)
@@ -168,13 +193,15 @@ class ImageViewerCrop(ImageViewer):
 
     def mouseMoveEvent(self, mouseEvent):
         # unnormalized QRect can have negative width/height
-        crop = QRect(2*self.center - mouseEvent.pos(),
-                     mouseEvent.pos()).normalized()
+        crop = QRect(2 * self.center - mouseEvent.pos(), mouseEvent.pos()).normalized()
         if self.shiftPressed:
             largerSide = max(crop.width(), crop.height())
-            self.rband.setGeometry(self.center.x() - largerSide//2,
-                                   self.center.y() - largerSide//2,
-                                   largerSide, largerSide)
+            self.rband.setGeometry(
+                self.center.x() - largerSide // 2,
+                self.center.y() - largerSide // 2,
+                largerSide,
+                largerSide,
+            )
         else:
             self.rband.setGeometry(crop)
         self.repaint()
@@ -182,25 +209,25 @@ class ImageViewerCrop(ImageViewer):
     def mouseReleaseEvent(self, mouseEvent):
         self.rband.hide()
         crop = self.rband.geometry()
-        if self.originalImg.isNull(): # no image loaded in
+        if self.originalImg.isNull():  # no image loaded in
             return
         # handle single click initializing default QRect selecting entire image
         if crop.height() < 10 and crop.width() < 10:
             return
         # calculate X and Y position in original image
-        X = int((self.horizontalScrollBar().value()+crop.x()) / self.zoom)
-        Y = int((self.verticalScrollBar().value()+crop.y()) / self.zoom)
+        X = int((self.horizontalScrollBar().value() + crop.x()) / self.zoom)
+        Y = int((self.verticalScrollBar().value() + crop.y()) / self.zoom)
         origScaleCropWidth = int(crop.width() / self.zoom)
         origScaleCropHeight = int(crop.height() / self.zoom)
         # save crop
-        cropQImage = self.originalImg.copy(QRect(X, Y, origScaleCropWidth,
-                                                         origScaleCropHeight))
+        cropQImage = self.originalImg.copy(
+            QRect(X, Y, origScaleCropWidth, origScaleCropHeight)
+        )
         sidebar = self.parentWidget().sidebar
         sidebar.crop_template.newImg(cropQImage)
 
 
 class Sidebar(QWidget):
-
     def __init__(self):
         super().__init__()
         self.initUI()
@@ -210,61 +237,62 @@ class Sidebar(QWidget):
         self.setFixedWidth(self.width)
         self.sldPrec = 3
         self.thresholdVal = 0.8
-        self.pixelSizeNm = 10 # nanometers per pixel
+        self.pixelSizeNm = 10  # nanometers per pixel
         self.groupPoints = True
-        self.groupRadius = 7 # µm
+        self.groupRadius = 7  # µm
         self.lastGroupSize = 0
-        self.lastMapLabel = ''
+        self.lastMapLabel = ""
         self.lastStartLabel = 0
-        self.generatedNav = ''
+        self.generatedNav = ""
         self.coords = []
 
         # widgets
         self.crop_template = ImageViewer()
         self.crop_template.setFixedHeight(200)
-        self.cbBlurTemp = QCheckBox('Blur template')
-        self.cbBlurImg  = QCheckBox('Blur image')
+        self.cbBlurTemp = QCheckBox("Blur template")
+        self.cbBlurImg = QCheckBox("Blur image")
         self.slider = QSlider(Qt.Horizontal)
-        self.slider.setMaximum(10**self.sldPrec)
+        self.slider.setMaximum(10 ** self.sldPrec)
         self.slider.valueChanged.connect(self._setThreshDisp)
         self.threshDisp = QDoubleSpinBox()
         self.threshDisp.setFixedHeight(40)
         self.threshDisp.setMaximum(1)
         self.threshDisp.setSingleStep(0.01)
         self.threshDisp.setDecimals(self.sldPrec)
-        self.threshDisp.valueChanged.connect(
-                         self._setThreshSlider)
+        self.threshDisp.valueChanged.connect(self._setThreshSlider)
         self.threshDisp.setValue(0.8)
-        buttonSearch = QPushButton('Search')
+        buttonSearch = QPushButton("Search")
         buttonSearch.clicked.connect(self._templateSearch)
-        buttonPrintCoord = QPushButton('Print Coordinates')
+        buttonPrintCoord = QPushButton("Print Coordinates")
         buttonPrintCoord.resize(buttonPrintCoord.sizeHint())
         buttonPrintCoord.clicked.connect(self.printCoordinates)
-        buttonClearPts = QPushButton('Clear Points')
+        buttonClearPts = QPushButton("Clear Points")
         buttonClearPts.clicked.connect(self._clearPts)
-        buttonNewNavFile = QPushButton('Write to output nav file')
+        buttonNewNavFile = QPushButton("Write to output nav file")
         buttonNewNavFile.resize(buttonNewNavFile.sizeHint())
         buttonNewNavFile.clicked.connect(self.generateNavFile)
 
-        self.cbAcquire = QCheckBox('Acquire')
+        self.cbAcquire = QCheckBox("Acquire")
         self.cbAcquire.setCheckState(Qt.Checked)
         self.cmboxGroupPts = QComboBox()
-        self.cmboxGroupPts.addItem('No Groups')
-        self.cmboxGroupPts.addItem('Groups within mesh')
-        self.cmboxGroupPts.addItem('Entire mesh as one group')
+        self.cmboxGroupPts.addItem("No Groups")
+        self.cmboxGroupPts.addItem("Groups within mesh")
+        self.cmboxGroupPts.addItem("Entire mesh as one group")
         self.cmboxGroupPts.currentIndexChanged.connect(self._selectGroupOption)
-        self.groupRadiusLabel = QLabel('Group Radius')
+        self.groupRadiusLabel = QLabel("Group Radius")
         self.groupRadiusLineEdit = QLineEdit()
         self.groupRadiusLineEdit.returnPressed.connect(
-                 lambda: self._setGroupRadius(self.groupRadiusLineEdit.text()))
+            lambda: self._setGroupRadius(self.groupRadiusLineEdit.text())
+        )
         self._setGroupRadius(str(self.groupRadius))
-        self.groupRadiusLabelµm = QLabel('µm')
-        self.pixelSizeLabel = QLabel('Pixel Size')
+        self.groupRadiusLabelµm = QLabel("µm")
+        self.pixelSizeLabel = QLabel("Pixel Size")
         self.pixelSizeLineEdit = QLineEdit()
         self.pixelSizeLineEdit.returnPressed.connect(
-                 lambda: self._setPixelSize(self.pixelSizeLineEdit.text()))
+            lambda: self._setPixelSize(self.pixelSizeLineEdit.text())
+        )
         self._setPixelSize(str(self.pixelSizeNm))
-        self.pixelSizeLabelnm = QLabel('nm')
+        self.pixelSizeLabelnm = QLabel("nm")
 
         # layout
         vlay = QVBoxLayout()
@@ -272,7 +300,7 @@ class Sidebar(QWidget):
         vlay.addWidget(self.cbBlurTemp)
         vlay.addWidget(self.cbBlurImg)
         vlay.addWidget(QLabel())
-        vlay.addWidget(QLabel('Threshold'))
+        vlay.addWidget(QLabel("Threshold"))
         vlay.addWidget(self.slider)
         vlay.addWidget(self.threshDisp)
         vlay.addWidget(buttonSearch)
@@ -281,7 +309,7 @@ class Sidebar(QWidget):
         vlay.addWidget(QLabel())
         vlay.addWidget(buttonNewNavFile)
         vlay.addWidget(self.cbAcquire)
-        vlay.addWidget(QLabel('Grouping option'))
+        vlay.addWidget(QLabel("Grouping option"))
         vlay.addWidget(self.cmboxGroupPts)
         self.groupInMeshLay = QGridLayout()
         self.groupInMeshLay.addWidget(self.groupRadiusLabel, 1, 0)
@@ -291,16 +319,16 @@ class Sidebar(QWidget):
         self.groupInMeshLay.addWidget(self.pixelSizeLineEdit, 2, 1)
         self.groupInMeshLay.addWidget(self.pixelSizeLabelnm, 2, 2)
         vlay.addLayout(self.groupInMeshLay)
-        self.cmboxGroupPts.setCurrentIndex(2) # entire mesh as one group
+        self.cmboxGroupPts.setCurrentIndex(2)  # entire mesh as one group
         vlay.addStretch(1)
         self.setLayout(vlay)
 
     def _setThreshDisp(self, i: int):
-        self.threshDisp.setValue(i / 10**self.sldPrec)
+        self.threshDisp.setValue(i / 10 ** self.sldPrec)
 
     def _setThreshSlider(self, val: float):
         try:
-            self.slider.setValue(int(10**self.sldPrec * val))
+            self.slider.setValue(int(10 ** self.sldPrec * val))
             self.thresholdVal = val
         except ValueError:
             pass
@@ -312,11 +340,13 @@ class Sidebar(QWidget):
             popup(self, "either image or template missing")
             return
 
-        self.coords = templateMatch(qImgToNp(image),
-                                    qImgToNp(template),
-                                    self.thresholdVal,
-                                    blurImage=self.cbBlurImg.isChecked(),
-                                    blurTemplate=self.cbBlurTemp.isChecked())
+        self.coords = templateMatch(
+            qImgToNp(image),
+            qImgToNp(template),
+            self.thresholdVal,
+            blurImage=self.cbBlurImg.isChecked(),
+            blurTemplate=self.cbBlurTemp.isChecked(),
+        )
         viewer = self.parentWidget().viewer
         viewer.searchedImg = drawCoords(viewer.originalImg, self.coords)
         viewer._setActiveImg(viewer.searchedImg)
@@ -343,11 +373,11 @@ class Sidebar(QWidget):
     def _writeToNavFile(self, isNew):
         # error checking
         navData = self.parentWidget().parentWidget().getNavData()
-        if not navData: # not loaded in
+        if not navData:  # not loaded in
             print("navfile not loaded in")
             popup(self, "navfile not loaded in")
             return
-        if not isNew and self.generatedNav == '':
+        if not isNew and self.generatedNav == "":
             print("need to generate a new nav file first")
             popup(self, "need to generate a new nav file first")
             return
@@ -371,19 +401,24 @@ class Sidebar(QWidget):
         theta = self.calibRotate
         scale = self.calibScale
         correctedCoords = defocusCorrectedCoords(coords, pivot, theta, scale)
-        navPoints, numGroups = coordsToNavPoints(correctedCoords, mapSection,
-                                                 startLabel, acquire, groupOpt,
-                                                 groupRadiusPixels)
+        navPoints, numGroups = coordsToNavPoints(
+            correctedCoords,
+            mapSection,
+            startLabel,
+            acquire,
+            groupOpt,
+            groupRadiusPixels,
+        )
 
         if isNew:
-            with open(filename, 'w') as f:
-                f.write('AdocVersion = 2.00\n\n')
+            with open(filename, "w") as f:
+                f.write("AdocVersion = 2.00\n\n")
                 for navPoint in navPoints:
                     f.write(str(navPoint))
             popup(self, "nav file created")
             self.generatedNav = filename
         else:
-            with open(self.generatedNav, 'a') as f:
+            with open(self.generatedNav, "a") as f:
                 for navPoint in navPoints:
                     f.write(str(navPoint))
             popup(self, "points added to nav file")
@@ -407,7 +442,7 @@ class Sidebar(QWidget):
             pass
 
     def _selectGroupOption(self, i):
-        if i == 1: # groups within mesh
+        if i == 1:  # groups within mesh
             self.groupRadiusLabel.show()
             self.groupRadiusLineEdit.show()
             self.groupRadiusLabelµm.show()
@@ -425,7 +460,6 @@ class Sidebar(QWidget):
 
 
 class MainWidget(QWidget):
-
     def __init__(self):
         super().__init__()
         self.initUI()
@@ -460,19 +494,18 @@ class MainWidget(QWidget):
             self.sidebar._setPixelSize(str(pixelSize))
 
     def setAcquire(self, acquire):
-        self.sidebar.cbAcquire.setCheckState(Qt.Checked if acquire
-                                                        else Qt.Unchecked)
+        self.sidebar.cbAcquire.setCheckState(Qt.Checked if acquire else Qt.Unchecked)
 
 
-class NavfileHandler():
-
+class NavfileHandler:
     def __init__(self):
-        self.navfile = ''
+        self.navfile = ""
         self.data = []
 
     def open(self, navfile):
         print(navfile)
-        if not navfile: return
+        if not navfile:
+            return
         if isValidAutodoc(navfile):
             self.navfile = navfile
             with open(navfile) as f:
@@ -483,12 +516,11 @@ class NavfileHandler():
             return 1
 
     def dialogOpen(self):
-        navfile = QFileDialog.getOpenFileName(self, 'Load Nav File')[0]
+        navfile = QFileDialog.getOpenFileName(self, "Load Nav File")[0]
         self.openNavfile(navfile)
 
 
 class MainWindow(QMainWindow):
-
     def __init__(self):
         super().__init__()
         self.root = MainWidget()
@@ -499,8 +531,8 @@ class MainWindow(QMainWindow):
 
     def initUI(self):
         menubar = self.menuBar()
-        fileMenu = menubar.addMenu('File')
-        viewMenu = menubar.addMenu('View')
+        fileMenu = menubar.addMenu("File")
+        viewMenu = menubar.addMenu("View")
 
         openFile = QAction("Open Image", self)
         openFile.setShortcut("Ctrl+O")
@@ -525,7 +557,7 @@ class MainWindow(QMainWindow):
         self.show()
 
     def imgFileDialog(self):
-        filename = QFileDialog.getOpenFileName(self, 'Open Image')[0]
+        filename = QFileDialog.getOpenFileName(self, "Open Image")[0]
 
         print(filename)
         if filename:
@@ -562,9 +594,21 @@ class MainWindow(QMainWindow):
         self.root.setAcquire(acquire)
 
 
-def main(navfile, image, mapLabel, newLabel, output, template=None, threshold=None,
-        groupOption=None, groupRadius=None, pixelSize=None, acquire=False,
-        calibRotate=0, calibScale=1):
+def main(
+    navfile,
+    image,
+    mapLabel,
+    newLabel,
+    output,
+    template=None,
+    threshold=None,
+    groupOption=None,
+    groupRadius=None,
+    pixelSize=None,
+    acquire=False,
+    calibRotate=0,
+    calibScale=1,
+):
     app = QApplication([])
     w = MainWindow()
     w.openNavfile(navfile)
@@ -593,4 +637,3 @@ def main(navfile, image, mapLabel, newLabel, output, template=None, threshold=No
     w.root.sidebar.calibScale = float(calibScale)
 
     sys.exit(app.exec_())
-
