@@ -1,10 +1,6 @@
-import io
 import os
 import sys
-import cv2
 import numpy as np
-import scipy.misc
-import imageio
 import PIL
 import PIL.ImageQt
 from PyQt5.QtCore import Qt, QRect, QSize, QBuffer
@@ -32,6 +28,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QImage, QPixmap, QKeySequence, QPainter, QBrush, QColor
 import semmatch
 from semmatch.templateMatch import templateMatch
+from semmatch.image import ImageHandler, qImgToNp, drawCoords
 from semmatch.autodoc import (
     isValidAutodoc,
     isValidLabel,
@@ -42,69 +39,12 @@ from semmatch.autodoc import (
 # Unset PIL max size
 PIL.Image.MAX_IMAGE_PIXELS = None
 
-# image data manipulation
-def npToQImage(ndArr):
-    pilImageQt = PIL.ImageQt.ImageQt(PIL.Image.fromarray(ndArr))
-    return QPixmap.fromImage(pilImageQt).toImage()
-
-
-def qImgToPilRGBA(qimg):
-    buf = QBuffer()
-    buf.open(QBuffer.ReadWrite)
-    qimg.save(buf, "PNG")
-    return PIL.Image.open(io.BytesIO(buf.data().data())).convert("RGBA")
-
-
-def qImgToNp(qimg):
-    return np.array(qImgToPilRGBA(qimg))
-
-
-def drawCross(img: "ndarray", x, y):
-    red = (255, 0, 0, 255)
-    cv2.line(img, (x - 15, y), (x + 15, y), red, 3)
-    cv2.line(img, (x, y - 15), (x, y + 15), red, 3)
-
-
-def drawCrosses(img: "ndarray", coords):
-    img = np.flip(img, 0).copy()
-    for x, y in coords:
-        drawCross(img, x, y)
-    return np.flip(img, 0).copy()
-
-
-def drawCoords(qimg, coords):
-    return npToQImage(drawCrosses(qImgToNp(qimg), coords))
-
 
 # popup messages
 def popup(parent, message):
     messagebox = QMessageBox(parent)
     messagebox.setText(message)
     messagebox.show()
-
-
-class ImageHandler:
-
-    MAX_DIM_BEFORE_DOWNSCALE = 2000
-
-    def __init__(self, filename):
-        # data = scipy.misc.imread(filename, flatten=True)
-        # data = imageio.imread(filename, as_gray=True)
-        data = imageio.imread(filename)
-        max_dimension = max(data.shape)
-        if max_dimension > self.MAX_DIM_BEFORE_DOWNSCALE:
-            self.downscale = float(max_dimension / self.MAX_DIM_BEFORE_DOWNSCALE)
-            self.downscaled_data = scipy.misc.imresize(data, 1 / self.downscale)
-        else:
-            self.downscale = 1
-            self.downscaled_data = data
-
-    def toQImage(self):
-        return npToQImage(self.downscaled_data)
-
-    def toOrigCoord(self, pt: "(x,y)"):
-        """return full scale coordinate"""
-        return (int(self.downscale * pt[0]), int(self.downscale * pt[1]))
 
 
 class ImageViewer(QScrollArea):
@@ -354,7 +294,7 @@ class Sidebar(QWidget):
 
     def printCoordinates(self):
         imagehandler = self.parentWidget().viewer.image
-        coords = [imagehandler.toOrigCoord(pt) for pt in self.coords]
+        coords = list(map(imagehandler.toOrigCoord, self.coords))
         popup(self, f"{len(coords)} points: {str(coords)}")
 
     def _clearPts(self):
@@ -394,16 +334,11 @@ class Sidebar(QWidget):
 
         imagehandler = self.parentWidget().viewer.image
         downscale = imagehandler.downscale
-        coords = [imagehandler.toOrigCoord(pt) for pt in self.coords]
+        coords = list(map(imagehandler.toOrigCoord, self.coords))
         img = self.parentWidget().viewer.originalImg
         pivot = (int(downscale * img.width() / 2), int(downscale * img.height() / 2))
         navPoints, numGroups = coordsToNavPoints(
-            coords,
-            mapSection,
-            startLabel,
-            acquire,
-            groupOpt,
-            groupRadiusPixels,
+            coords, mapSection, startLabel, acquire, groupOpt, groupRadiusPixels
         )
 
         if isNew:
