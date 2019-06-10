@@ -34,8 +34,6 @@ def main():
 
     # optional
     parser.add_argument("-A", "--acquire", help="", action="store_true")
-    parser.add_argument("--calibRotate", help="defocus angle correction", default=0)
-    parser.add_argument("--calibScale", help="defocus scale correction", default=1)
 
     args = parser.parse_args()
     print(args)
@@ -64,8 +62,6 @@ def main():
             args.groupRadius,
             args.pixelSize,
             args.acquire,
-            args.calibRotate,
-            args.calibScale,
         )
 
     else:

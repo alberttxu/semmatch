@@ -31,7 +31,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QImage, QPixmap, QKeySequence, QPainter, QBrush, QColor
 import semmatch
-from semmatch.templateMatch import templateMatch, defocusCorrectedCoords
+from semmatch.templateMatch import templateMatch
 from semmatch.autodoc import (
     isValidAutodoc,
     isValidLabel,
@@ -392,17 +392,13 @@ class Sidebar(QWidget):
         acquire = int(self.cbAcquire.isChecked())
         groupOpt = self.cmboxGroupPts.currentIndex()
 
-        # correct defocus
         imagehandler = self.parentWidget().viewer.image
         downscale = imagehandler.downscale
         coords = [imagehandler.toOrigCoord(pt) for pt in self.coords]
         img = self.parentWidget().viewer.originalImg
         pivot = (int(downscale * img.width() / 2), int(downscale * img.height() / 2))
-        theta = self.calibRotate
-        scale = self.calibScale
-        correctedCoords = defocusCorrectedCoords(coords, pivot, theta, scale)
         navPoints, numGroups = coordsToNavPoints(
-            correctedCoords,
+            coords,
             mapSection,
             startLabel,
             acquire,
@@ -606,8 +602,6 @@ def main(
     groupRadius=None,
     pixelSize=None,
     acquire=False,
-    calibRotate=0,
-    calibScale=1,
 ):
     app = QApplication([])
     w = MainWindow()
@@ -633,7 +627,5 @@ def main(
     w.root.sidebar.newLabel = newLabel
     w.root.sidebar.mapLabel = mapLabel
     w.root.sidebar.outputNavfile = output
-    w.root.sidebar.calibRotate = float(calibRotate)
-    w.root.sidebar.calibScale = float(calibScale)
 
     sys.exit(app.exec_())

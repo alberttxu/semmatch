@@ -70,25 +70,3 @@ def templateMatch(
     matches = [(downSample * x, downSample * y) for x, y in matches]
     return matches
 
-
-def rotate(coords, theta: "deg"):
-    """positive angles ccw"""
-    theta = math.radians(theta)
-    result = []
-    for x, y in coords:
-        result.append(
-            (
-                x * math.cos(theta) - y * math.sin(theta),
-                x * math.sin(theta) + y * math.cos(theta),
-            )
-        )
-    return result
-
-
-def defocusCorrectedCoords(coords, pivot: "(x,y)", theta: "deg", scale):
-    """Rotate and scale coordinates to compensate for View mode defocus."""
-    coords = [(x - pivot[0], y - pivot[1]) for x, y in coords]
-    coords = rotate(coords, theta)
-    coords = [(int(scale * x), int(scale * y)) for x, y in coords]
-    coords = [(x + pivot[0], y + pivot[1]) for x, y in coords]
-    return coords
