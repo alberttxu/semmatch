@@ -2,7 +2,7 @@ import cv2
 import math
 import numpy as np
 import PIL
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage.filters import gaussian_filter, maximum_filter
 
 
 # for relative distance, square distance is faster to compute
@@ -54,7 +54,9 @@ def templateMatch(
     template = np.flip(template, 0).copy()
     h, w, *_ = template.shape
     xcorrScores = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
-    loc = zip(*np.where(xcorrScores >= threshold))
+    maxfilter = maximum_filter(xcorrScores, size=template.shape)
+    loc = zip(*np.where((xcorrScores >= threshold) & (xcorrScores == maxfilter)))
+
     scoresIndex = [(x, y, xcorrScores[y][x]) for y, x in loc]
     scoresIndex.sort(key=lambda a: a[2], reverse=True)
 
