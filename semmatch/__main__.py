@@ -25,18 +25,13 @@ def main():
     parser.add_argument("--template", help="", required="--gui" not in sys.argv)
     parser.add_argument("--threshold", help="", required="--gui" not in sys.argv)
     parser.add_argument("--groupOption", help="", required="--gui" not in sys.argv)
-    parser.add_argument(
-        "--groupRadius", help="groupRadius in µm", required="--gui" not in sys.argv
-    )
-    parser.add_argument(
-        "--pixelSize", help="pixelSize in nm", required="--gui" not in sys.argv
-    )
 
     # optional
     parser.add_argument("-A", "--acquire", help="", action="store_true")
+    parser.add_argument("--groupRadius", help="groupRadius in µm")
+    parser.add_argument("--pixelSize", help="pixelSize in nm")
 
     args = parser.parse_args()
-    print(args)
 
     if args.groupOption != "1" and (
         args.groupRadius is not None or args.pixelSize is not None
@@ -65,8 +60,42 @@ def main():
         )
 
     else:
-        # import templateMatch et al.
-        pass
+        from semmatch.image import ImageHandler
+        from semmatch.templateMatch import templateMatch
+        from semmatch.autodoc import coordsToNavPoints, sectionToDict
+
+        image = ImageHandler(args.image)
+        template = ImageHandler(args.template)
+        pts = list(
+            map(
+                image.toOrigCoord,
+                templateMatch(
+                    image.getData(),
+                    template.getData(),
+                    threshold=float(args.threshold),
+                    blurImage=True,
+                    blurTemplate=True,
+                ),
+            )
+        )
+
+        with open(args.navfile) as f:
+            navdata = [line.strip() for line in f.readlines()]
+        if args.groupRadius == None:
+            groupRadius = 0
+        else:
+            groupRadius = int(args.groupRadius)
+        navPts = coordsToNavPoints(
+            pts,
+            navdata,
+            args.mapLabel,
+            int(args.newLabel),
+            acquire=args.acquire,
+            groupOpt=int(args.groupOption),
+        )[0]
+
+        with open(args.output, "w") as f:
+            f.write("AdocVersion = 2.00\n\n" + "".join(str(pt) for pt in navPts))
 
 
 if __name__ == "__main__":

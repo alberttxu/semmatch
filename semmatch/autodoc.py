@@ -1,6 +1,30 @@
 from semmatch.groups import greedyPathThroughPts, makeGroupsOfPoints
 
 
+def isValidAutodoc(navfile):
+    try:
+        with open(navfile) as f:
+            for line in f:
+                if line.strip():
+                    if line.split()[0] == "AdocVersion":
+                        return True
+                    else:
+                        print("error: could not find AdocVersion")
+                        return False
+    except:
+        print("invalid autodoc")
+        return False
+
+
+def isValidLabel(data: "list", label: str):
+    try:
+        mapSectionIndex = data.index(f"[Item = {label}]")
+    except:
+        print("unable to write new autodoc file: label %s not found" % label)
+        return False
+    return True
+
+
 class NavFilePoint:
     def __init__(
         self,
@@ -42,30 +66,6 @@ class NavFilePoint:
         return "\n".join(result)
 
 
-def isValidAutodoc(navfile):
-    try:
-        with open(navfile) as f:
-            for line in f:
-                if line.strip():
-                    if line.split()[0] == "AdocVersion":
-                        return True
-                    else:
-                        print("error: could not find AdocVersion")
-                        return False
-    except:
-        print("invalid autodoc")
-        return False
-
-
-def isValidLabel(data: "list", label: str):
-    try:
-        mapSectionIndex = data.index(f"[Item = {label}]")
-    except:
-        print("unable to write new autodoc file: label %s not found" % label)
-        return False
-    return True
-
-
 def sectionToDict(data: "list", label: str):
     start = data.index(f"[Item = {label}]") + 1
     try:
@@ -83,8 +83,16 @@ def sectionToDict(data: "list", label: str):
 
 
 def coordsToNavPoints(
-    coords, mapSection: "Dict", startLabel: int, acquire, groupOpt: int, groupRadiusPix
+    coords,
+    navdata: list,
+    mapLabel: str,
+    startLabel: int,
+    acquire: bool,
+    groupOpt: int,
+    groupRadiusPix: int = 0,
 ):
+    mapSection = sectionToDict(navdata, mapLabel)
+
     regis = int(mapSection["Regis"][0])
     drawnID = int(mapSection["MapID"][0])
     zHeight = float(mapSection["StageXYZ"][2])
@@ -132,6 +140,9 @@ def coordsToNavPoints(
             )
             subLabel += 1
         label += 1
+    else:
+        raise ValueError("groupOpt needs to be 0, 1, or 2")
 
     numGroups = label - startLabel
     return navPoints, numGroups
+

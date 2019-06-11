@@ -46,10 +46,9 @@ def test_writeToNavFile():
     ]
     mapID = "30-A"
     with open("nav.nav") as f:
-        navfileLines = [line.strip() for line in f.readlines()]
-    mapSection = sectionToDict(navfileLines, mapID)
+        navdata = [line.strip() for line in f.readlines()]
     navPts = coordsToNavPoints(
-        coords, mapSection, startLabel=9000, acquire=1, groupOpt=0, groupRadiusPix=123
+        coords, navdata, mapID, startLabel=9000, acquire=1, groupOpt=0, groupRadiusPix=123
     )[0]
     newNavData = "AdocVersion = 2.00\n\n" + "".join(str(pt) for pt in navPts)
     with open("newNav.nav", "w") as f:

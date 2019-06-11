@@ -32,7 +32,6 @@ from semmatch.image import ImageHandler, qImgToNp, drawCoords
 from semmatch.autodoc import (
     isValidAutodoc,
     isValidLabel,
-    sectionToDict,
     coordsToNavPoints,
 )
 
@@ -327,7 +326,6 @@ class Sidebar(QWidget):
         startLabel = int(self.newLabel)
 
         # write to file
-        mapSection = sectionToDict(navData, mapLabel)
         groupRadiusPixels = 1000 * self.groupRadius / self.pixelSizeNm
         acquire = int(self.cbAcquire.isChecked())
         groupOpt = self.cmboxGroupPts.currentIndex()
@@ -338,7 +336,7 @@ class Sidebar(QWidget):
         img = self.parentWidget().viewer.originalImg
         pivot = (int(downscale * img.width() / 2), int(downscale * img.height() / 2))
         navPoints, numGroups = coordsToNavPoints(
-            coords, mapSection, startLabel, acquire, groupOpt, groupRadiusPixels
+            coords, navData, mapLabel, startLabel, acquire, groupOpt, groupRadiusPixels
         )
 
         if isNew:

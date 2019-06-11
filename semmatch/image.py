@@ -57,7 +57,7 @@ class ImageHandler:
             self.downscaled_data = data
 
     def getData(self):
-        return self.data
+        return self.downscaled_data
 
     def toQImage(self):
         return npToQImage(self.downscaled_data)
