@@ -8,6 +8,9 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import QBuffer
 import scipy.misc
 
+# Unset PIL max size
+PIL.Image.MAX_IMAGE_PIXELS = None
+
 
 def npToQImage(ndArr):
     pilImageQt = PIL.ImageQt.ImageQt(PIL.Image.fromarray(ndArr))

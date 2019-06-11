@@ -35,9 +35,6 @@ from semmatch.autodoc import (
     coordsToNavPoints,
 )
 
-# Unset PIL max size
-PIL.Image.MAX_IMAGE_PIXELS = None
-
 
 # popup messages
 def popup(parent, message):

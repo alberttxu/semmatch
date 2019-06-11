@@ -1,3 +1,4 @@
+import random
 from semmatch.groups import greedyPathThroughPts, makeGroupsOfPoints
 
 
@@ -108,7 +109,7 @@ def coordsToNavPoints(
     elif groupOpt == 1:  # groups withing mesh
         for group in makeGroupsOfPoints(coords, groupRadiusPix):
             subLabel = 1
-            groupID = id(group)
+            groupID = random.randint(10**9, 2 * 10**9)
             for pt in group:
                 navPoints.append(
                     NavFilePoint(
@@ -124,7 +125,7 @@ def coordsToNavPoints(
                 subLabel += 1
             label += 1
     elif groupOpt == 2:  # entire mesh as group
-        groupID = id(coords)
+        groupID = random.randint(10**9, 2 * 10**9)
         subLabel = 1
         for pt in greedyPathThroughPts(coords):
             navPoints.append(

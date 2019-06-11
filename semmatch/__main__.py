@@ -74,7 +74,7 @@ def main():
         groupOption = None
         groupRadius = None
         pixelSize = None
-    acquire = args.acquire
+    acquire = int(args.acquire)
 
     if args.gui == True:
         import semmatch.gui
@@ -94,24 +94,19 @@ def main():
         )
 
     else:
+        import imageio
         from semmatch.image import ImageHandler
         from semmatch.templateMatch import templateMatch
         from semmatch.autodoc import coordsToNavPoints, sectionToDict
 
-        image = ImageHandler(image)
-        template = ImageHandler(template)
-        pts = list(
-            map(
-                image.toOrigCoord,
-                templateMatch(
-                    image.getData(),
-                    template.getData(),
-                    threshold=threshold,
-                    blurImage=True,
-                    blurTemplate=True,
-                ),
-            )
-        )
+        image = imageio.imread(image)
+        template = imageio.imread(template)
+        pts = templateMatch(image,
+                            template,
+                            threshold=threshold,
+                            downSample=10,
+                            blurImage=True,
+                            blurTemplate=True)
 
         with open(navfile) as f:
             navdata = [line.strip() for line in f.readlines()]
@@ -122,7 +117,7 @@ def main():
             newLabel,
             acquire=acquire,
             groupOpt=groupOption,
-            groupRadiusPix=groupRadius * 1000 / (pixelSize * image.downscale),
+            groupRadiusPix=groupRadius * 1000 / pixelSize,
         )[0]
 
         with open(output, "w") as f:
