@@ -22,9 +22,19 @@ def main():
     # conditionally required
     # template, threshold, and groupOption/groupRadius/pixelSize are
     #   required in non-gui mode, but optional in gui mode
-    parser.add_argument("--template", help="", required="--gui" not in sys.argv)
-    parser.add_argument("--threshold", help="", required="--gui" not in sys.argv)
-    parser.add_argument("--groupOption", help="", required="--gui" not in sys.argv)
+    parser.add_argument(
+        "--template",
+        help="template image to use; required in non-gui mode",
+        required="--gui" not in sys.argv,
+    )
+    parser.add_argument(
+        "--threshold", help="threshold value for zncc", required="--gui" not in sys.argv
+    )
+    parser.add_argument(
+        "--groupOption",
+        help="grouping option for points; 0 = no groups; 1 = groups within mesh (requires --groupRadius and --pixelSize; 2 = entire mesh as one group",
+        required="--gui" not in sys.argv,
+    )
 
     # optional
     parser.add_argument("-A", "--acquire", help="", action="store_true")
@@ -42,21 +52,45 @@ def main():
     if args.groupOption == "1" and (args.groupRadius is None or args.pixelSize is None):
         parser.error("groupOption 1 requires groupRadius and pixelSize")
 
+    navfile = args.navfile
+    image = args.image
+    mapLabel = args.mapLabel
+    newLabel = int(args.newLabel)
+    output = args.output
+    template = args.template
+    if args.threshold:
+        threshold = float(args.threshold)
+    else:
+        threshold = None
+    if args.groupOption:
+        groupOption = int(args.groupOption)
+        if groupOption == 1:
+            groupRadius = float(args.groupRadius)
+            pixelSize = float(args.pixelSize)
+        else:
+            groupRadius = 0
+            pixelSize = 1
+    else:
+        groupOption = None
+        groupRadius = None
+        pixelSize = None
+    acquire = args.acquire
+
     if args.gui == True:
         import semmatch.gui
 
         semmatch.gui.main(
-            args.navfile,
-            args.image,
-            args.mapLabel,
-            args.newLabel,
-            args.output,
-            args.template,
-            args.threshold,
-            args.groupOption,
-            args.groupRadius,
-            args.pixelSize,
-            args.acquire,
+            navfile,
+            image,
+            mapLabel,
+            newLabel,
+            output,
+            template,
+            threshold,
+            groupOption,
+            groupRadius,
+            pixelSize,
+            acquire,
         )
 
     else:
@@ -64,37 +98,34 @@ def main():
         from semmatch.templateMatch import templateMatch
         from semmatch.autodoc import coordsToNavPoints, sectionToDict
 
-        image = ImageHandler(args.image)
-        template = ImageHandler(args.template)
+        image = ImageHandler(image)
+        template = ImageHandler(template)
         pts = list(
             map(
                 image.toOrigCoord,
                 templateMatch(
                     image.getData(),
                     template.getData(),
-                    threshold=float(args.threshold),
+                    threshold=threshold,
                     blurImage=True,
                     blurTemplate=True,
                 ),
             )
         )
 
-        with open(args.navfile) as f:
+        with open(navfile) as f:
             navdata = [line.strip() for line in f.readlines()]
-        if args.groupRadius == None:
-            groupRadius = 0
-        else:
-            groupRadius = int(args.groupRadius)
         navPts = coordsToNavPoints(
             pts,
             navdata,
-            args.mapLabel,
-            int(args.newLabel),
-            acquire=args.acquire,
-            groupOpt=int(args.groupOption),
+            mapLabel,
+            newLabel,
+            acquire=acquire,
+            groupOpt=groupOption,
+            groupRadiusPix=groupRadius * 1000 / (pixelSize * image.downscale),
         )[0]
 
-        with open(args.output, "w") as f:
+        with open(output, "w") as f:
             f.write("AdocVersion = 2.00\n\n" + "".join(str(pt) for pt in navPts))
 
 
