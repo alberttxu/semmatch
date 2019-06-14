@@ -54,7 +54,9 @@ def templateMatch(
     template = np.flip(template, 0).copy()
     h, w, *_ = template.shape
     xcorrScores = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
-    maxfilter = maximum_filter(xcorrScores, size=template.shape)
+    maxfilter = maximum_filter(
+        xcorrScores, size=(template.shape[0] // 2, template.shape[1] // 2)
+    )
     loc = zip(*np.where((xcorrScores >= threshold) & (xcorrScores == maxfilter)))
 
     scoresIndex = [(x, y, xcorrScores[y][x]) for y, x in loc]
@@ -69,4 +71,3 @@ def templateMatch(
     # multiply back to get correct coordinates
     matches = [(downSample * x, downSample * y) for x, y in matches]
     return matches
-
