@@ -101,12 +101,19 @@ def main():
 
         image = imageio.imread(image)
         template = imageio.imread(template)
-        pts = templateMatch(image,
-                            template,
-                            threshold=threshold,
-                            downSample=10,
-                            blurImage=True,
-                            blurTemplate=True)
+        MAX_DIM_BEFORE_DOWNSCALE = 2000
+        max_dimension = max(image.shape)
+        downscale = 1
+        if max_dimension > MAX_DIM_BEFORE_DOWNSCALE:
+            downscale = int(max_dimension / MAX_DIM_BEFORE_DOWNSCALE)
+        pts = templateMatch(
+            image,
+            template,
+            threshold=threshold,
+            downSample=downscale,
+            blurImage=True,
+            blurTemplate=True,
+        )
 
         with open(navfile) as f:
             navdata = [line.strip() for line in f.readlines()]
