@@ -320,6 +320,7 @@ class Sidebar(QWidget):
 
         filename = self.outputNavfile
         mapLabel = self.mapLabel
+        binning = self.binning
         startLabel = int(self.newLabel)
 
         # write to file
@@ -330,8 +331,8 @@ class Sidebar(QWidget):
         imagehandler = self.parentWidget().viewer.image
         downscale = imagehandler.downscale
         coords = list(map(imagehandler.toOrigCoord, self.coords))
+        coords = [(binning * x, binning * y) for x,y in coords]
         img = self.parentWidget().viewer.originalImg
-        pivot = (int(downscale * img.width() / 2), int(downscale * img.height() / 2))
         navPoints, numGroups = coordsToNavPoints(
             coords, navData, mapLabel, startLabel, acquire, groupOpt, groupRadiusPixels
         )
@@ -532,6 +533,7 @@ def main(
     groupRadius=None,
     pixelSize=None,
     acquire=False,
+    binning=1,
 ):
     app = QApplication([])
     w = MainWindow()
@@ -554,6 +556,7 @@ def main(
         w.setGroupOption(groupOption, groupRadius, pixelSize)
 
     w.setAcquire(acquire)
+    w.root.sidebar.binning = binning
     w.root.sidebar.newLabel = newLabel
     w.root.sidebar.mapLabel = mapLabel
     w.root.sidebar.outputNavfile = output

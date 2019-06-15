@@ -6,7 +6,8 @@ def main():
     # required
     parser.add_argument("--gui", help="interactive gui mode", action="store_true")
     parser.add_argument("--navfile", help="SerialEM nav file", required=True)
-    parser.add_argument("--image", help="binning 1 jpg", required=True)
+    parser.add_argument("--image", help="jpg", required=True)
+    parser.add_argument("--bin", help="external binning factor", required=True)
     parser.add_argument("--mapLabel", help="label id", required=True)
     parser.add_argument(
         "--newLabel", help="starting label of added points", required=True
@@ -54,6 +55,7 @@ def main():
 
     navfile = args.navfile
     image = args.image
+    binning = int(args.bin)
     mapLabel = args.mapLabel
     newLabel = int(args.newLabel)
     output = args.output
@@ -91,6 +93,7 @@ def main():
             groupRadius,
             pixelSize,
             acquire,
+            binning,
         )
 
     else:
@@ -114,6 +117,8 @@ def main():
             blurImage=True,
             blurTemplate=True,
         )
+
+        pts = [(binning * x, binning * y) for x,y in pts]
 
         with open(navfile) as f:
             navdata = [line.strip() for line in f.readlines()]
