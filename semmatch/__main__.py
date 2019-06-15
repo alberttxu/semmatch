@@ -114,8 +114,6 @@ def main():
             template,
             threshold=threshold,
             downSample=downscale,
-            blurImage=True,
-            blurTemplate=True,
         )
 
         pts = [(binning * x, binning * y) for x,y in pts]
