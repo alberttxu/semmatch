@@ -29,11 +29,7 @@ from PyQt5.QtGui import QImage, QPixmap, QKeySequence, QPainter, QBrush, QColor
 import semmatch
 from semmatch.templateMatch import templateMatch
 from semmatch.image import ImageHandler, qImgToNp, drawCoords
-from semmatch.autodoc import (
-    isValidAutodoc,
-    isValidLabel,
-    coordsToNavPoints,
-)
+from semmatch.autodoc import isValidAutodoc, isValidLabel, coordsToNavPoints
 
 
 # popup messages
@@ -119,6 +115,20 @@ class ImageViewerCrop(ImageViewer):
         self.originalImg = self.image.toQImage()
         self.parentWidget().sidebar._clearPts()
         self.parentWidget().parentWidget().setWindowTitle(filename)
+
+        self.zoom = 1
+        self.horizontalScrollBar().setValue(
+            (
+                self.horizontalScrollBar().minimum()
+                + self.horizontalScrollBar().maximum()
+            )
+            // 2
+        )
+        self.verticalScrollBar().setValue(
+            (self.verticalScrollBar().minimum() + self.verticalScrollBar().maximum())
+            // 2
+        )
+        self._refresh()
 
     def mousePressEvent(self, mouseEvent):
         self.shiftPressed = QApplication.keyboardModifiers() == Qt.ShiftModifier
@@ -331,7 +341,7 @@ class Sidebar(QWidget):
         imagehandler = self.parentWidget().viewer.image
         downscale = imagehandler.downscale
         coords = list(map(imagehandler.toOrigCoord, self.coords))
-        coords = [(binning * x, binning * y) for x,y in coords]
+        coords = [(binning * x, binning * y) for x, y in coords]
         img = self.parentWidget().viewer.originalImg
         navPoints, numGroups = coordsToNavPoints(
             coords, navData, mapLabel, startLabel, acquire, groupOpt, groupRadiusPixels
