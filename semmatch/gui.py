@@ -27,12 +27,12 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QImage, QPixmap, QKeySequence, QPainter, QBrush, QColor
 import semmatch
-from semmatch.templateMatch import templateMatch
+from semmatch.search import templateMatch
 from semmatch.image import ImageHandler, qImgToNp, drawCoords
 from semmatch.autodoc import (
     isValidAutodoc,
     isValidLabel,
-    coordsToNavPoints,
+    ptsToNavPts,
 )
 
 
@@ -333,7 +333,7 @@ class Sidebar(QWidget):
         coords = list(map(imagehandler.toOrigCoord, self.coords))
         coords = [(binning * x, binning * y) for x,y in coords]
         img = self.parentWidget().viewer.originalImg
-        navPoints, numGroups = coordsToNavPoints(
+        navPoints, numGroups = ptsToNavPts(
             coords, navData, mapLabel, startLabel, acquire, groupOpt, groupRadiusPixels
         )
 

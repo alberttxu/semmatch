@@ -1,17 +1,20 @@
+from collections import namedtuple
 import cv2
 import math
 import numpy as np
 import PIL
 from scipy.ndimage.filters import gaussian_filter, maximum_filter
 
+# define universal Point type
+Pt = namedtuple("Pt", "x y")
 
 # for relative distance, square distance is faster to compute
-def squareDist(pt1: "tuple", pt2: "tuple"):
-    return (pt1[0] - pt2[0]) ** 2 + (pt1[1] - pt2[1]) ** 2
+def squareDist(pt1, pt2):
+    return (pt1.x - pt2.x) ** 2 + (pt1.y - pt2.y) ** 2
 
 
 # prevent including the same hole multiple times
-def pointsExistWithinRadius(center, coords, radius):
+def pointsExistWithinRadius(center: "Pt", coords, radius):
     radius_2 = radius ** 2
     if len(coords) == 0:
         return False
@@ -72,8 +75,8 @@ def templateMatch(
     for x, y, _ in scoresIndex:
         x += w // 2
         y += h // 2
-        if not pointsExistWithinRadius((x, y), matches, radius=max(h, w)):
-            matches.append((x, y))
+        if not pointsExistWithinRadius(Pt(x, y), matches, radius=max(h, w)):
+            matches.append(Pt(x, y))
     # multiply back to get correct coordinates
-    matches = [(downSample * x, downSample * y) for x, y in matches]
+    matches = [Pt(downSample * x, downSample * y) for x, y in matches]
     return matches

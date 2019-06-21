@@ -67,7 +67,7 @@ class NavFilePoint:
         return "\n".join(result)
 
 
-def sectionToDict(data: "list", label: str):
+def findSection(data: "list", label: str) -> dict:
     start = data.index(f"[Item = {label}]") + 1
     try:
         section = data[start : data.index("", start)]
@@ -83,7 +83,7 @@ def sectionToDict(data: "list", label: str):
     return result
 
 
-def coordsToNavPoints(
+def ptsToNavPts(
     coords,
     navdata: list,
     mapLabel: str,
@@ -92,7 +92,7 @@ def coordsToNavPoints(
     groupOpt: int,
     groupRadiusPix: int = 0,
 ):
-    mapSection = sectionToDict(navdata, mapLabel)
+    mapSection = findSection(navdata, mapLabel)
 
     regis = int(mapSection["Regis"][0])
     drawnID = int(mapSection["MapID"][0])
@@ -109,7 +109,7 @@ def coordsToNavPoints(
     elif groupOpt == 1:  # groups withing mesh
         for group in makeGroupsOfPoints(coords, groupRadiusPix):
             subLabel = 1
-            groupID = random.randint(10**9, 2 * 10**9)
+            groupID = random.randint(10 ** 9, 2 * 10 ** 9)
             for pt in group:
                 navPoints.append(
                     NavFilePoint(
@@ -125,7 +125,7 @@ def coordsToNavPoints(
                 subLabel += 1
             label += 1
     elif groupOpt == 2:  # entire mesh as group
-        groupID = random.randint(10**9, 2 * 10**9)
+        groupID = random.randint(10 ** 9, 2 * 10 ** 9)
         subLabel = 1
         for pt in greedyPathThroughPts(coords):
             navPoints.append(
@@ -147,3 +147,7 @@ def coordsToNavPoints(
     numGroups = label - startLabel
     return navPoints, numGroups
 
+
+def createAutodoc(outputfile, navPts):
+    with open(outputfile, "w") as f:
+        f.write("AdocVersion = 2.00\n\n" + "".join(str(pt) for pt in navPts))

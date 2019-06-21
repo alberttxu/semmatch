@@ -99,8 +99,8 @@ def main():
     else:
         import imageio
         from semmatch.image import ImageHandler
-        from semmatch.templateMatch import templateMatch
-        from semmatch.autodoc import coordsToNavPoints, sectionToDict
+        from semmatch.search import Pt, templateMatch
+        from semmatch.autodoc import ptsToNavPts, findSection, createAutodoc
 
         image = imageio.imread(image)
         template = imageio.imread(template)
@@ -109,18 +109,13 @@ def main():
         downscale = 1
         if max_dimension > MAX_DIM_BEFORE_DOWNSCALE:
             downscale = int(max_dimension / MAX_DIM_BEFORE_DOWNSCALE)
-        pts = templateMatch(
-            image,
-            template,
-            threshold=threshold,
-            downSample=downscale,
-        )
+        pts = templateMatch(image, template, threshold=threshold, downSample=downscale)
 
-        pts = [(binning * x, binning * y) for x,y in pts]
+        pts = [Pt(binning * x, binning * y) for x, y in pts]
 
         with open(navfile) as f:
             navdata = [line.strip() for line in f.readlines()]
-        navPts = coordsToNavPoints(
+        navPts = ptsToNavPts(
             pts,
             navdata,
             mapLabel,
@@ -130,8 +125,7 @@ def main():
             groupRadiusPix=groupRadius * 1000 / pixelSize,
         )[0]
 
-        with open(output, "w") as f:
-            f.write("AdocVersion = 2.00\n\n" + "".join(str(pt) for pt in navPts))
+        createAutodoc(output, navPts)
 
 
 if __name__ == "__main__":

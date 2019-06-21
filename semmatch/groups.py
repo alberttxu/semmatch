@@ -1,12 +1,12 @@
 import numpy as np
-from semmatch.templateMatch import squareDist
+from semmatch.search import squareDist, Pt
 
 
 def centroid(pts: "ndarray"):
     length = pts.shape[0]
     sum_x = np.sum(pts[:, 0])
     sum_y = np.sum(pts[:, 1])
-    return sum_x / length, sum_y / length
+    return Pt(sum_x / length, sum_y / length)
 
 
 def closestPtToCentroid(pts):
@@ -29,7 +29,7 @@ def greedyPathThroughPts(coords):
     if coords == []:
         return []
 
-    coords = [tuple(pt) for pt in coords]
+    coords = [Pt(*coord) for coord in coords]
     leftMostPt = sorted(coords, key=lambda x: x[0])[0]
     unvisitedPts = set(coords)
     unvisitedPts.remove(leftMostPt)
