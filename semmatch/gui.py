@@ -208,14 +208,16 @@ class Sidebar(QWidget):
             lambda: self._setGroupRadius(self.groupRadiusLineEdit.text())
         )
         global navOptions
-        self._setGroupRadius(str(navOptions.groupRadius))
+        if navOptions.groupRadius is not None:
+            self._setGroupRadius(str(navOptions.groupRadius))
         self.groupRadiusLabelµm = QLabel("µm")
         self.pixelSizeLabel = QLabel("Pixel Size")
         self.pixelSizeLineEdit = QLineEdit()
         self.pixelSizeLineEdit.returnPressed.connect(
             lambda: self._setPixelSize(self.pixelSizeLineEdit.text())
         )
-        self._setPixelSize(str(navOptions.pixelSize))
+        if navOptions.pixelSize is not None:
+            self._setPixelSize(str(navOptions.pixelSize))
         self.pixelSizeLabelnm = QLabel("nm")
 
         # layout
@@ -281,7 +283,7 @@ class Sidebar(QWidget):
     def printCoordinates(self):
         global pts
         popup(self, "%d matches" % len(pts))
-        print(len(pts))
+        print("%d matches" % len(pts))
 
     def _clearPts(self):
         global pts
@@ -299,35 +301,44 @@ class Sidebar(QWidget):
             navOptions.pixelSize,
             int(self.cbAcquire.isChecked()),
         )
+        global pts
+        global finalPts
+        finalPts = pts
         QApplication.quit()
 
     def _setGroupRadius(self, s: str):
         try:
             groupRadius = float("{:.1f}".format(float(s)))
-            global navOptions
-            navOptions = NavOptions(
-                navOptions.groupOption,
-                groupRadius,
-                navOptions.pixelSize,
-                navOptions.acquire,
-            )
             self.groupRadiusLineEdit.setText(str(groupRadius))
         except Exception as e:
+            print('_setGroupRadius exception')
             print(e)
+            groupRadius = None
+
+        global navOptions
+        navOptions = NavOptions(
+            navOptions.groupOption,
+            groupRadius,
+            navOptions.pixelSize,
+            navOptions.acquire,
+        )
 
     def _setPixelSize(self, s: str):
         try:
-            pixelSizeNm = float("{:.1f}".format(float(s)))
-            global navOptions
-            navOptions = NavOptions(
-                navOptions.groupOption,
-                navOptions.groupRadius,
-                pixelSizeNm,
-                navOptions.acquire,
-            )
-            self.pixelSizeLineEdit.setText(str(pixelSizeNm))
+            pixelSize = float("{:.1f}".format(float(s))) # in nm
+            self.pixelSizeLineEdit.setText(str(pixelSize))
         except Exception as e:
+            print('_setPixelSize exception')
             print(e)
+            pixelSize = None
+
+        global navOptions
+        navOptions = NavOptions(
+            navOptions.groupOption,
+            navOptions.groupRadius,
+            pixelSize,
+            navOptions.acquire,
+        )
 
     def _selectGroupOption(self, groupOption):
         global navOptions
@@ -415,6 +426,9 @@ def main(image, template, threshold, options: "NavOptions"):
     global pts
     pts = []
 
+    global finalPts
+    finalPts = []
+
     app = QApplication([])
     w = MainWindow()
     w.openImage(image)
@@ -423,4 +437,4 @@ def main(image, template, threshold, options: "NavOptions"):
 
     app.exec_()
 
-    return pts, navOptions
+    return finalPts, navOptions

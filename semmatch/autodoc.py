@@ -10,6 +10,7 @@ def openNavfile(navfile) -> dict:
     if "AdocVersion" not in sections[0]:
         raise Exception("could not find AdocVersion")
     sections = [section.split("\n") for section in sections[1:]]
+    sections = list(filter(lambda x: x != [""], sections))
     for section in sections:
         item = section[0][1:-1].split("=")[1].strip()
         sectionData = {}
@@ -91,9 +92,14 @@ class NavFilePoint:
 def ptsToNavPts(
     coords, nav: dict, mapLabel: str, startLabel: int, options: "NavOptions"
 ):
-    regis = int(nav[mapLabel]["Regis"][0])
-    drawnID = int(nav[mapLabel]["MapID"][0])
-    zHeight = float(nav[mapLabel]["StageXYZ"].split()[2])
+    try:
+        regis = int(nav[mapLabel]["Regis"][0])
+        drawnID = int(nav[mapLabel]["MapID"][0])
+        zHeight = float(nav[mapLabel]["StageXYZ"].split()[2])
+    except KeyError as e:
+        print(e)
+        exit()
+
     navPoints = []
     label = startLabel
 
@@ -106,7 +112,12 @@ def ptsToNavPts(
             )
             label += 1
     elif options.groupOption == 1:  # groups withing mesh
-        groupRadiusPix = options.groupRadius * 1000 / options.pixelSize
+        try:
+            groupRadiusPix = options.groupRadius * 1000 / options.pixelSize
+        except ZeroDivisionError:
+            print("pixel size can't be 0; aborting")
+            exit()
+
         for group in makeGroupsOfPoints(coords, groupRadiusPix):
             subLabel = 1
             groupID = random.randint(10 ** 9, 2 * 10 ** 9)

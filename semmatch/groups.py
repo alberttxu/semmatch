@@ -53,7 +53,11 @@ def makeGroupsOfPoints(pts, max_radius):
     max_radius_2 = max_radius ** 2
     groups = []
     greedyPath = greedyPathThroughPts(pts)[::-1]
-    group = [greedyPath.pop()]
+    try:
+        group = [greedyPath.pop()]
+    except:
+        print("pts list is empty")
+        return []
     while greedyPath:
         pt = greedyPath.pop()
         if squareDist(pt, group[0]) < max_radius_2:
