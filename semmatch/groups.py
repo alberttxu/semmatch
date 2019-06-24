@@ -1,5 +1,5 @@
 import numpy as np
-from semmatch.search import squareDist, Pt
+from semmatch.core import squareDist, Pt
 
 
 def centroid(pts: "ndarray"):

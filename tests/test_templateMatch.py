@@ -1,8 +1,8 @@
 import numpy as np
 import PIL
 from scipy.ndimage import gaussian_filter
-from semmatch.search import templateMatch, Pt
-from semmatch.autodoc import ptsToNavPts, findSection
+from semmatch.core import templateMatch, Pt
+from semmatch.autodoc import ptsToNavPts
 
 
 def test_templateMatch():

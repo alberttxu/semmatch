@@ -2,6 +2,27 @@ import random
 from semmatch.groups import greedyPathThroughPts, makeGroupsOfPoints
 
 
+def openNavfile(navfile) -> dict:
+    nav = {}
+    with open(navfile) as f:
+        data = f.read()
+    sections = data.split("\n\n")
+    if "AdocVersion" not in sections[0]:
+        raise Exception("could not find AdocVersion")
+    sections = [section.split("\n") for section in sections[1:]]
+    for section in sections:
+        item = section[0][1:-1].split("=")[1].strip()
+        sectionData = {}
+        for line in section[1:]:
+            if "=" in line:
+                key, val = line.split("=")
+                key = key.strip()
+                val = val.strip()
+                sectionData[key] = val
+        nav[item] = sectionData
+    return nav
+
+
 def isValidAutodoc(navfile):
     try:
         with open(navfile) as f:
@@ -67,46 +88,25 @@ class NavFilePoint:
         return "\n".join(result)
 
 
-def findSection(data: "list", label: str) -> dict:
-    start = data.index(f"[Item = {label}]") + 1
-    try:
-        section = data[start : data.index("", start)]
-    except ValueError:  # end of file reached
-        section = data[start:]
-
-    result = {}
-    for line in section:
-        key, val = [s.strip() for s in line.split("=")]
-        if key != "Note":
-            val = val.split()
-        result[key] = val
-    return result
-
-
 def ptsToNavPts(
-    coords,
-    navdata: list,
-    mapLabel: str,
-    startLabel: int,
-    acquire: bool,
-    groupOpt: int,
-    groupRadiusPix: int = 0,
+    coords, nav: dict, mapLabel: str, startLabel: int, options: "NavOptions"
 ):
-    mapSection = findSection(navdata, mapLabel)
-
-    regis = int(mapSection["Regis"][0])
-    drawnID = int(mapSection["MapID"][0])
-    zHeight = float(mapSection["StageXYZ"][2])
+    regis = int(nav[mapLabel]["Regis"][0])
+    drawnID = int(nav[mapLabel]["MapID"][0])
+    zHeight = float(nav[mapLabel]["StageXYZ"].split()[2])
     navPoints = []
     label = startLabel
 
-    if groupOpt == 0:  # no groups
+    if options.groupOption == 0:  # no groups
         for pt in greedyPathThroughPts(coords):
             navPoints.append(
-                NavFilePoint(label, regis, *pt, zHeight, drawnID, acquire=acquire)
+                NavFilePoint(
+                    label, regis, *pt, zHeight, drawnID, acquire=options.acquire
+                )
             )
             label += 1
-    elif groupOpt == 1:  # groups withing mesh
+    elif options.groupOption == 1:  # groups withing mesh
+        groupRadiusPix = groupRadius * 1000 / pixelSize
         for group in makeGroupsOfPoints(coords, groupRadiusPix):
             subLabel = 1
             groupID = random.randint(10 ** 9, 2 * 10 ** 9)
@@ -119,12 +119,12 @@ def ptsToNavPts(
                         zHeight,
                         drawnID,
                         groupID=groupID,
-                        acquire=acquire,
+                        acquire=options.acquire,
                     )
                 )
                 subLabel += 1
             label += 1
-    elif groupOpt == 2:  # entire mesh as group
+    elif options.groupOption == 2:  # entire mesh as group
         groupID = random.randint(10 ** 9, 2 * 10 ** 9)
         subLabel = 1
         for pt in greedyPathThroughPts(coords):
@@ -136,16 +136,14 @@ def ptsToNavPts(
                     zHeight,
                     drawnID,
                     groupID=groupID,
-                    acquire=acquire,
+                    acquire=options.acquire,
                 )
             )
             subLabel += 1
         label += 1
     else:
-        raise ValueError("groupOpt needs to be 0, 1, or 2")
-
-    numGroups = label - startLabel
-    return navPoints, numGroups
+        raise ValueError("groupOption needs to be 0, 1, or 2")
+    return navPoints
 
 
 def createAutodoc(outputfile, navPts):

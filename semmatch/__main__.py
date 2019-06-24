@@ -1,13 +1,17 @@
 def main():
     import argparse
     import sys
+    import imageio
+    from scipy.misc import imresize
+    from semmatch.image import ImageHandler
+    from semmatch.core import Pt, NavOptions, templateMatch
+    from semmatch.autodoc import ptsToNavPts, createAutodoc, openNavfile
 
     parser = argparse.ArgumentParser(description="template matching tool for SerialEM")
     # required
     parser.add_argument("--gui", help="interactive gui mode", action="store_true")
     parser.add_argument("--navfile", help="SerialEM nav file", required=True)
     parser.add_argument("--image", help="jpg", required=True)
-    parser.add_argument("--bin", help="external binning factor", required=True)
     parser.add_argument("--mapLabel", help="label id", required=True)
     parser.add_argument(
         "--newLabel", help="starting label of added points", required=True
@@ -38,6 +42,7 @@ def main():
     )
 
     # optional
+    parser.add_argument("--bin", help="external binning factor", default=1)
     parser.add_argument("-A", "--acquire", help="", action="store_true")
     parser.add_argument("--groupRadius", help="groupRadius in µm")
     parser.add_argument("--pixelSize", help="pixelSize in nm")
@@ -77,55 +82,36 @@ def main():
         groupRadius = None
         pixelSize = None
     acquire = int(args.acquire)
+    options = NavOptions(groupOption, groupRadius, pixelSize, acquire)
+
+    nav = openNavfile(navfile)
+    if mapLabel not in nav:
+        raise Exception("could not find map label: %s" % mapLabel)
+
+    # read and downsize images if necessary
+    image = imageio.imread(image)
+    template = imageio.imread(template)
+    MAX_DIM_BEFORE_DOWNSCALE = 2000
+    max_dimension = max(image.shape)
+    downscale = 1
+    if max_dimension > MAX_DIM_BEFORE_DOWNSCALE:
+        downscale = float(max_dimension / MAX_DIM_BEFORE_DOWNSCALE)
+        image = imresize(image, 1 / downscale, interp="lanczos")
+        if template is not None:
+            template = imresize(template, 1 / downscale, interp="lanczos")
 
     if args.gui == True:
         import semmatch.gui
 
-        semmatch.gui.main(
-            navfile,
-            image,
-            mapLabel,
-            newLabel,
-            output,
-            template,
-            threshold,
-            groupOption,
-            groupRadius,
-            pixelSize,
-            acquire,
-            binning,
-        )
-
+        pts, options = semmatch.gui.main(image, template, threshold, options)
     else:
-        import imageio
-        from semmatch.image import ImageHandler
-        from semmatch.search import Pt, templateMatch
-        from semmatch.autodoc import ptsToNavPts, findSection, createAutodoc
+        pts = templateMatch(image, template, threshold)
+    pts = [
+        Pt(int(binning * downscale * x), int(binning * downscale * y)) for x, y in pts
+    ]
+    navPts = ptsToNavPts(pts, nav, mapLabel, newLabel, options)
 
-        image = imageio.imread(image)
-        template = imageio.imread(template)
-        MAX_DIM_BEFORE_DOWNSCALE = 2000
-        max_dimension = max(image.shape)
-        downscale = 1
-        if max_dimension > MAX_DIM_BEFORE_DOWNSCALE:
-            downscale = int(max_dimension / MAX_DIM_BEFORE_DOWNSCALE)
-        pts = templateMatch(image, template, threshold=threshold, downSample=downscale)
-
-        pts = [Pt(binning * x, binning * y) for x, y in pts]
-
-        with open(navfile) as f:
-            navdata = [line.strip() for line in f.readlines()]
-        navPts = ptsToNavPts(
-            pts,
-            navdata,
-            mapLabel,
-            newLabel,
-            acquire=acquire,
-            groupOpt=groupOption,
-            groupRadiusPix=groupRadius * 1000 / pixelSize,
-        )[0]
-
-        createAutodoc(output, navPts)
+    createAutodoc(output, navPts)
 
 
 if __name__ == "__main__":

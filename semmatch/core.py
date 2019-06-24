@@ -5,8 +5,12 @@ import numpy as np
 import PIL
 from scipy.ndimage.filters import gaussian_filter, maximum_filter
 
-# define universal Point type
+# ubiquitous Point type
 Pt = namedtuple("Pt", "x y")
+
+# output nav grouping/acquire options
+NavOptions = namedtuple("NavOptions", "groupOption groupRadius pixelSize acquire")
+
 
 # for relative distance, square distance is faster to compute
 def squareDist(pt1, pt2):
