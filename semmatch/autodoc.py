@@ -93,8 +93,8 @@ def ptsToNavPts(
     coords, nav: dict, mapLabel: str, startLabel: int, options: "NavOptions"
 ):
     try:
-        regis = int(nav[mapLabel]["Regis"][0])
-        drawnID = int(nav[mapLabel]["MapID"][0])
+        regis = int(nav[mapLabel]["Regis"])
+        drawnID = int(nav[mapLabel]["MapID"])
         zHeight = float(nav[mapLabel]["StageXYZ"].split()[2])
     except KeyError as e:
         print(e)

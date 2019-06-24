@@ -19,7 +19,6 @@ def main():
         "-o",
         "--output",
         help="output nav file",
-        default="semmatchNav.nav",
         required=True,
     )
 
