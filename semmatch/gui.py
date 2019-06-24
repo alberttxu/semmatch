@@ -108,6 +108,13 @@ class ImageViewerCrop(ImageViewer):
         self.originalImg = npToQImage(image)
         self.parentWidget().sidebar._clearPts()
 
+        self.zoom = 1
+        hsb = self.horizontalScrollBar()
+        vsb = self.verticalScrollBar()
+        hsb.setValue((hsb.minimum() + hsb.maximum()) // 2)
+        vsb.setValue((vsb.minimum() + vsb.maximum()) // 2)
+        self._refresh()
+
     def mousePressEvent(self, mouseEvent):
         self.shiftPressed = QApplication.keyboardModifiers() == Qt.ShiftModifier
         self.center = mouseEvent.pos()
