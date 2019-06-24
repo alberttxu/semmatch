@@ -372,6 +372,9 @@ class MainWidget(QWidget):
     def openImage(self, image):
         self.viewer.loadImage(image)
 
+    def setTemplate(self, template):
+        self.sidebar.crop_template.newImg(npToQImage(template))
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -401,6 +404,9 @@ class MainWindow(QMainWindow):
     def openImage(self, image):
         self.root.openImage(image)
 
+    def setTemplate(self, template):
+        self.root.setTemplate(template)
+
 
 def main(image, template, threshold, options: "NavOptions"):
     global navOptions
@@ -412,6 +418,8 @@ def main(image, template, threshold, options: "NavOptions"):
     app = QApplication([])
     w = MainWindow()
     w.openImage(image)
+    if template is not None:
+        w.setTemplate(template)
 
     app.exec_()
 

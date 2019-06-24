@@ -90,7 +90,8 @@ def main():
 
     # read and downsize images if necessary
     image = imageio.imread(image)
-    template = imageio.imread(template)
+    if template is not None:
+        template = imageio.imread(template)
     MAX_DIM_BEFORE_DOWNSCALE = 2000
     max_dimension = max(image.shape)
     downscale = 1
