@@ -106,7 +106,7 @@ def ptsToNavPts(
             )
             label += 1
     elif options.groupOption == 1:  # groups withing mesh
-        groupRadiusPix = groupRadius * 1000 / pixelSize
+        groupRadiusPix = options.groupRadius * 1000 / options.pixelSize
         for group in makeGroupsOfPoints(coords, groupRadiusPix):
             subLabel = 1
             groupID = random.randint(10 ** 9, 2 * 10 ** 9)

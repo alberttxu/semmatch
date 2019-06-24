@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import (
     QComboBox,
 )
 from PyQt5.QtGui import QImage, QPixmap, QKeySequence, QPainter, QBrush, QColor
-from semmatch.core import templateMatch
+from semmatch.core import NavOptions, templateMatch
 from semmatch.image import npToQImage, qImgToNp, drawCoords
 
 
@@ -161,11 +161,6 @@ class Sidebar(QWidget):
         self.setFixedWidth(self.width)
         self.sldPrec = 3
         self.thresholdVal = 0.8
-        self.pixelSizeNm = 10  # nanometers per pixel
-        self.groupPoints = True
-        self.groupRadius = 7  # µm
-        self.lastGroupSize = 0
-        self.lastStartLabel = 0
 
         # widgets
         self.crop_template = ImageViewer()
@@ -205,14 +200,15 @@ class Sidebar(QWidget):
         self.groupRadiusLineEdit.returnPressed.connect(
             lambda: self._setGroupRadius(self.groupRadiusLineEdit.text())
         )
-        self._setGroupRadius(str(self.groupRadius))
+        global navOptions
+        self._setGroupRadius(str(navOptions.groupRadius))
         self.groupRadiusLabelµm = QLabel("µm")
         self.pixelSizeLabel = QLabel("Pixel Size")
         self.pixelSizeLineEdit = QLineEdit()
         self.pixelSizeLineEdit.returnPressed.connect(
             lambda: self._setPixelSize(self.pixelSizeLineEdit.text())
         )
-        self._setPixelSize(str(self.pixelSizeNm))
+        self._setPixelSize(str(navOptions.pixelSize))
         self.pixelSizeLabelnm = QLabel("nm")
 
         # layout
@@ -277,6 +273,7 @@ class Sidebar(QWidget):
 
     def printCoordinates(self):
         global pts
+        popup(self, "%d matches" % len(pts))
         print(len(pts))
 
     def _clearPts(self):
@@ -288,24 +285,52 @@ class Sidebar(QWidget):
         viewer._refresh()
 
     def saveAndQuit(self):
+        global navOptions
+        navOptions = NavOptions(
+            navOptions.groupOption,
+            navOptions.groupRadius,
+            navOptions.pixelSize,
+            int(self.cbAcquire.isChecked()),
+        )
         QApplication.quit()
 
     def _setGroupRadius(self, s: str):
         try:
-            self.groupRadius = float("{:.1f}".format(float(s)))
-            self.groupRadiusLineEdit.setText(str(self.groupRadius))
-        except:
-            pass
+            groupRadius = float("{:.1f}".format(float(s)))
+            global navOptions
+            navOptions = NavOptions(
+                navOptions.groupOption,
+                groupRadius,
+                navOptions.pixelSize,
+                navOptions.acquire,
+            )
+            self.groupRadiusLineEdit.setText(str(groupRadius))
+        except Exception as e:
+            print(e)
 
     def _setPixelSize(self, s: str):
         try:
-            self.pixelSizeNm = float("{:.1f}".format(float(s)))
-            self.pixelSizeLineEdit.setText(str(self.pixelSizeNm))
-        except:
-            pass
+            pixelSizeNm = float("{:.1f}".format(float(s)))
+            global navOptions
+            navOptions = NavOptions(
+                navOptions.groupOption,
+                navOptions.groupRadius,
+                pixelSizeNm,
+                navOptions.acquire,
+            )
+            self.pixelSizeLineEdit.setText(str(pixelSizeNm))
+        except Exception as e:
+            print(e)
 
-    def _selectGroupOption(self, i):
-        if i == 1:  # groups within mesh
+    def _selectGroupOption(self, groupOption):
+        global navOptions
+        navOptions = NavOptions(
+            groupOption,
+            navOptions.groupRadius,
+            navOptions.pixelSize,
+            navOptions.acquire,
+        )
+        if groupOption == 1:  # groups within mesh
             self.groupRadiusLabel.show()
             self.groupRadiusLineEdit.show()
             self.groupRadiusLabelµm.show()
@@ -340,25 +365,6 @@ class MainWidget(QWidget):
     def openImage(self, image):
         self.viewer.loadImage(image)
 
-    def setTemplate(self, template):
-        if os.path.isfile(template):
-            self.sidebar.crop_template.newImg(QImage(template))
-        else:
-            popup(self, "template image %s not found" % template)
-
-    def setThreshold(self, threshold):
-        self.sidebar.threshDisp.setValue(threshold)
-
-    def setGroupOption(self, option, radius=None, pixelSize=None):
-        self.sidebar.cmboxGroupPts.setCurrentIndex(option)
-        self.sidebar._selectGroupOption(option)
-        if option == 1:
-            self.sidebar._setGroupRadius(str(radius))
-            self.sidebar._setPixelSize(str(pixelSize))
-
-    def setAcquire(self, acquire):
-        self.sidebar.cbAcquire.setCheckState(Qt.Checked if acquire else Qt.Unchecked)
-
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -388,20 +394,10 @@ class MainWindow(QMainWindow):
     def openImage(self, image):
         self.root.openImage(image)
 
-    def setTemplate(self, template):
-        self.root.setTemplate(template)
-
-    def setThreshold(self, threshold):
-        self.root.setThreshold(threshold)
-
-    def setGroupOption(self, option, radius=None, pixelSize=None):
-        self.root.setGroupOption(option, radius, pixelSize)
-
-    def setAcquire(self, acquire):
-        self.root.setAcquire(acquire)
-
 
 def main(image, template, threshold, options: "NavOptions"):
+    global navOptions
+    navOptions = options
 
     global pts
     pts = []
@@ -412,4 +408,4 @@ def main(image, template, threshold, options: "NavOptions"):
 
     app.exec_()
 
-    return pts, options
+    return pts, navOptions
