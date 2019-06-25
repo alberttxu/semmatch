@@ -109,7 +109,7 @@ def main():
         downscale = float(max_dimension / MAX_DIM_BEFORE_DOWNSCALE)
         image = imresize(image, 1 / downscale, interp="lanczos")
         if template is not None:
-            template = imresize(template, 1 / downscale, interp="lanczos")
+            template = imresize(template, 1 / (downscale * binning), interp="lanczos")
 
     if args.gui == True:
         import semmatch.gui
