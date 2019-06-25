@@ -200,7 +200,6 @@ class Sidebar(QWidget):
         buttonSaveAndQuit.clicked.connect(self.saveAndQuit)
 
         self.cbAcquire = QCheckBox("Acquire")
-        self.cbAcquire.setCheckState(Qt.Checked)
         self.cmboxGroupPts = QComboBox()
         self.cmboxGroupPts.addItem("No Groups")
         self.cmboxGroupPts.addItem("Groups within mesh")
@@ -438,6 +437,9 @@ class MainWidget(QWidget):
     def setBlurTemplate(self, blur: bool):
         self.sidebar.cbBlurTemp.setChecked(blur)
 
+    def setAcquire(self, acquire: bool):
+        self.sidebar.cbAcquire.setChecked(acquire)
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -475,6 +477,9 @@ class MainWindow(QMainWindow):
     def setBlurTemplate(self, blur: bool):
         self.root.setBlurTemplate(blur)
 
+    def setAcquire(self, acquire: bool):
+        self.root.setAcquire(acquire)
+
 
 def main(image, template, threshold, options: "NavOptions", blurImage=True, blurTemplate=True):
     global navOptions
@@ -493,6 +498,7 @@ def main(image, template, threshold, options: "NavOptions", blurImage=True, blur
         w.setTemplate(template)
         w.setBlurTemplate(blurTemplate)
     w.setBlurImage(blurImage)
+    w.setAcquire(navOptions.acquire)
 
     app.exec_()
 
