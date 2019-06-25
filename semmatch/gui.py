@@ -429,6 +429,12 @@ class MainWidget(QWidget):
     def setTemplate(self, template):
         self.sidebar.crop_template.newImg(npToQImage(template))
 
+    def setBlurImage(self, blur: bool):
+        self.sidebar.cbBlurImg.setCheckState(blur)
+
+    def setBlurTemplate(self, blur: bool):
+        self.sidebar.cbBlurTemp.setCheckState(blur)
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -461,8 +467,14 @@ class MainWindow(QMainWindow):
     def setTemplate(self, template):
         self.root.setTemplate(template)
 
+    def setBlurImage(self, blur: bool):
+        self.root.setBlurImage(blur)
 
-def main(image, template, threshold, options: "NavOptions"):
+    def setBlurTemplate(self, blur: bool):
+        self.root.setBlurTemplate(blur)
+
+
+def main(image, template, threshold, options: "NavOptions", blurImage=True, blurTemplate=True):
     global navOptions
     navOptions = options
 
@@ -477,6 +489,8 @@ def main(image, template, threshold, options: "NavOptions"):
     w.openImage(image)
     if template is not None:
         w.setTemplate(template)
+        w.setBlurTemplate(blurTemplate)
+    w.setBlurImage(blurImage)
 
     app.exec_()
 

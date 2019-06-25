@@ -47,6 +47,8 @@ def main():
         type=int,
         default=10,
     )
+    parser.add_argument("--noBlurImage", help="", action="store_true")
+    parser.add_argument("--noBlurTemplate", help="", action="store_true")
 
     args = parser.parse_args()
 
@@ -63,6 +65,8 @@ def main():
     pixelSize = args.pixelSize
     numGroups = args.numGroups
     acquire = int(args.acquire)
+    blurImage = not args.noBlurImage
+    blurTemplate = not args.noBlurTemplate
     options = NavOptions(groupOption, groupRadius, pixelSize, numGroups, acquire)
 
     # unnecessary options messages
@@ -114,7 +118,14 @@ def main():
     if args.gui == True:
         import semmatch.gui
 
-        pts, options = semmatch.gui.main(image, template, threshold, options)
+        pts, options = semmatch.gui.main(
+            image,
+            template,
+            threshold,
+            options,
+            blurImage=blurImage,
+            blurTemplate=blurTemplate,
+        )
         if options.groupRadius is None:
             print("invalid group radius; aborting")
             exit()
@@ -122,7 +133,9 @@ def main():
             print("invalid pixel size; aborting")
             exit()
     else:
-        pts = templateMatch(image, template, threshold)
+        pts = templateMatch(
+            image, template, threshold, blurImage=blurImage, blurTemplate=blurTemplate
+        )
     pts = [
         Pt(int(binning * downscale * x), int(binning * downscale * y)) for x, y in pts
     ]
