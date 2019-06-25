@@ -1,5 +1,28 @@
+import functools
+import math
+import operator
 import numpy as np
+from sklearn.cluster import KMeans
 from semmatch.core import squareDist, Pt
+
+
+# https://stackoverflow.com/a/51075698
+# clockwise sort starting from bottom left
+def clockwiseSort(pts):
+    center = tuple(
+        map(
+            operator.truediv,
+            functools.reduce(lambda x, y: map(operator.add, x, y), pts),
+            [len(pts)] * 2,
+        )
+    )
+    return sorted(
+        pts,
+        key=lambda pt: (
+            -135 - math.degrees(math.atan2(*tuple(map(operator.sub, pt, center))[::-1]))
+        )
+        % 360,
+    )
 
 
 def centroid(pts: "ndarray"):
@@ -71,4 +94,16 @@ def makeGroupsOfPoints(pts, max_radius):
     for i in range(len(groups)):
         groupLeader = closestPtToCentroid(groups[i])
         groups[i] = [groupLeader] + [pt for pt in groups[i] if pt != groupLeader]
+    return groups
+
+
+def k_means(pts, k):
+    labels = KMeans(k).fit(pts).labels_
+    groups = []
+    for i in range(k):
+        group = []
+        for j in np.where(labels == i)[0]:
+            group.append(pts[j])
+        if len(group) > 0:
+            groups.append(group)
     return groups

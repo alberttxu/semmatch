@@ -9,7 +9,9 @@ from scipy.ndimage.filters import gaussian_filter, maximum_filter
 Pt = namedtuple("Pt", "x y")
 
 # output nav grouping/acquire options
-NavOptions = namedtuple("NavOptions", "groupOption groupRadius pixelSize acquire")
+NavOptions = namedtuple(
+    "NavOptions", "groupOption groupRadius pixelSize numGroups acquire"
+)
 
 
 # for relative distance, square distance is faster to compute

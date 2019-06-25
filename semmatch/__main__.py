@@ -13,14 +13,9 @@ def main():
     parser.add_argument("--image", help="jpg", required=True)
     parser.add_argument("--mapLabel", help="label id", required=True)
     parser.add_argument(
-        "--newLabel", help="starting label of added points", required=True, type=int
+        "--newLabel", help="starting label of added points", type=int, required=True
     )
-    parser.add_argument(
-        "-o",
-        "--output",
-        help="output nav file",
-        required=True,
-    )
+    parser.add_argument("-o", "--output", help="output nav file", required=True)
 
     # conditionally required
     parser.add_argument(
@@ -33,7 +28,7 @@ def main():
     parser.add_argument("--gui", help="interactive gui mode", action="store_true")
     parser.add_argument(
         "--groupOption",
-        help="grouping option for points; 0 = no groups; 1 = groups within mesh (requires --groupRadius and --pixelSize; 2 = entire mesh as one group",
+        help="grouping option for points; 0 = no groups; 1 = groups within mesh (requires --groupRadius and --pixelSize; 2 = entire mesh as one group; 3 = k-means clustering",
         type=int,
         default=0,
     )
@@ -46,18 +41,14 @@ def main():
         "--groupRadius", help="groupRadius in µm", type=float, default=7.0
     )
     parser.add_argument("--pixelSize", help="pixelSize in nm", type=float, default=5.0)
+    parser.add_argument(
+        "--numGroups",
+        help="number of groups for k-means groupOption",
+        type=int,
+        default=10,
+    )
 
     args = parser.parse_args()
-
-    if args.groupOption != "1":
-        if args.groupRadius is not None:
-            print(
-                "groupRadius will be ignored because groupOption is not 1 (groups within mesh)"
-            )
-        if args.pixelSize is not None:
-            print(
-                "pixelSize will be ignored because groupOption is not 1 (groups within mesh)"
-            )
 
     navfile = args.navfile
     image = args.image
@@ -70,8 +61,24 @@ def main():
     groupOption = args.groupOption
     groupRadius = args.groupRadius
     pixelSize = args.pixelSize
+    numGroups = args.numGroups
     acquire = int(args.acquire)
-    options = NavOptions(groupOption, groupRadius, pixelSize, acquire)
+    options = NavOptions(groupOption, groupRadius, pixelSize, numGroups, acquire)
+
+    # unnecessary options messages
+    if groupOption != 1:
+        if groupRadius is not None:
+            print(
+                "groupRadius will be ignored because groupOption is not 1 (groups within mesh)"
+            )
+        if pixelSize is not None:
+            print(
+                "pixelSize will be ignored because groupOption is not 1 (groups within mesh)"
+            )
+    if groupOption != 3 and numGroups is not None:
+        print(
+            "numGroups will be ignored because groupOption is not 3 (k-means clustering)"
+        )
 
     nav = openNavfile(navfile)
     if mapLabel not in nav:

@@ -1,5 +1,11 @@
 import random
-from semmatch.groups import greedyPathThroughPts, makeGroupsOfPoints
+from semmatch.groups import (
+    greedyPathThroughPts,
+    makeGroupsOfPoints,
+    k_means,
+    closestPtToCentroid,
+    clockwiseSort,
+)
 
 
 def openNavfile(navfile) -> dict:
@@ -152,8 +158,35 @@ def ptsToNavPts(
             )
             subLabel += 1
         label += 1
+    elif options.groupOption == 3:  # k-means
+        groups = []
+        for group in k_means(coords, options.numGroups):
+            groupLeader = closestPtToCentroid(group)
+            group.remove(groupLeader)
+            group = clockwiseSort(group)
+            group = [groupLeader] + greedyPathThroughPts(group)
+            groups.append(group)
+        groups.sort(key=lambda group: group[0][0])  # sort by group leader's x position
+
+        for group in groups:
+            subLabel = 1
+            groupID = random.randint(10 ** 9, 2 * 10 ** 9)
+            for pt in group:
+                navPoints.append(
+                    NavFilePoint(
+                        f"{label}-{subLabel}",
+                        regis,
+                        *pt,
+                        zHeight,
+                        drawnID,
+                        groupID=groupID,
+                        acquire=options.acquire,
+                    )
+                )
+                subLabel += 1
+            label += 1
     else:
-        raise ValueError("groupOption needs to be 0, 1, or 2")
+        raise ValueError("groupOption needs to be 0, 1, 2, or 3")
     return navPoints
 
 
