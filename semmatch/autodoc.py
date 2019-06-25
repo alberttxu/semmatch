@@ -163,7 +163,6 @@ def ptsToNavPts(
         for group in k_means(coords, options.numGroups):
             groupLeader = closestPtToCentroid(group)
             group.remove(groupLeader)
-            group = clockwiseSort(group)
             group = [groupLeader] + greedyPathThroughPts(group)
             groups.append(group)
         groups.sort(key=lambda group: group[0][0])  # sort by group leader's x position

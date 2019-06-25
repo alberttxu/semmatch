@@ -98,6 +98,14 @@ def makeGroupsOfPoints(pts, max_radius):
 
 
 def k_means(pts, k):
+    if len(pts) < k:
+        print(
+            "only %d points were found, which is less than %d (numGroups); setting number of groups to 1"
+            % (len(pts), k)
+        )
+        k = 1
+        if len(pts) == 1:
+            return [pts]
     labels = KMeans(k).fit(pts).labels_
     groups = []
     for i in range(k):
