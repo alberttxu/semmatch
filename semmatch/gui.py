@@ -433,10 +433,10 @@ class MainWidget(QWidget):
         self.sidebar.crop_template.newImg(npToQImage(template))
 
     def setBlurImage(self, blur: bool):
-        self.sidebar.cbBlurImg.setCheckState(blur)
+        self.sidebar.cbBlurImg.setChecked(blur)
 
     def setBlurTemplate(self, blur: bool):
-        self.sidebar.cbBlurTemp.setCheckState(blur)
+        self.sidebar.cbBlurTemp.setChecked(blur)
 
 
 class MainWindow(QMainWindow):
