@@ -261,6 +261,7 @@ class Sidebar(QWidget):
         vlay.addLayout(self.groupInMeshLay)
         vlay.addLayout(self.kmeansLayout)
         self.cmboxGroupPts.setCurrentIndex(navOptions.groupOption)
+        self._selectGroupOption(navOptions.groupOption)
         vlay.addStretch(1)
         self.setLayout(vlay)
 
