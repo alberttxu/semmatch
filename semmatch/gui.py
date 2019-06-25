@@ -55,10 +55,13 @@ class ImageViewer(QScrollArea):
         vBar = self.verticalScrollBar()
         try:
             hBarRatio = hBar.value() / hBar.maximum()
+        except ZeroDivisionError:
+            hBarRatio = 0.5
+        try:
             vBarRatio = vBar.value() / vBar.maximum()
         except ZeroDivisionError:
-            hBarRatio = 0
-            vBarRatio = 0
+            vBarRatio = 0.5
+
         # resize
         img = self.activeImg.scaled(
             self.zoom * self.activeImg.size(), aspectRatioMode=Qt.KeepAspectRatio
@@ -458,8 +461,7 @@ class MainWindow(QMainWindow):
         viewMenu.addAction(zoomIn)
         viewMenu.addAction(zoomOut)
 
-        self.setGeometry(300, 300, 1000, 1000)
-        self.show()
+        self.showMaximized()
 
     def openImage(self, image):
         self.root.openImage(image)
