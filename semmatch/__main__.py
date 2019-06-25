@@ -95,6 +95,9 @@ def main():
         )
         exit()
 
+    # clear output file to prevent merging previous points
+    createAutodoc(output, [])
+
     # read and downsize images if necessary
     image = imageio.imread(image)
     if template is not None:
