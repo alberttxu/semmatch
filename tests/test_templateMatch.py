@@ -1,8 +1,8 @@
 import numpy as np
 import PIL
 from scipy.ndimage import gaussian_filter
-from semmatch.core import templateMatch, Pt
-from semmatch.autodoc import ptsToNavPts
+from semmatch.core import templateMatch, Pt, NavOptions
+from semmatch.autodoc import ptsToNavPts, openNavfile
 
 
 def test_templateMatch():
@@ -46,11 +46,9 @@ def test_writeToNavFile():
     ]
     coords = [Pt(*coord) for coord in coords]
     mapID = "30-A"
-    with open("nav.nav") as f:
-        navdata = [line.strip() for line in f.readlines()]
-    navPts = ptsToNavPts(
-        coords, navdata, mapID, startLabel=9000, acquire=1, groupOpt=0, groupRadiusPix=123
-    )[0]
+    nav = openNavfile("nav.nav")
+    options = NavOptions(groupOption=0, groupRadius=123, pixelSize=1, numGroups=1, acquire=1)
+    navPts = ptsToNavPts(coords, nav, mapID, startLabel=9000, options=options)
     newNavData = "AdocVersion = 2.00\n\n" + "".join(str(pt) for pt in navPts)
     with open("newNav.nav", "w") as f:
         f.write(newNavData)
