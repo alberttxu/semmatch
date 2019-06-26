@@ -36,7 +36,7 @@ def main():
         "--threshold", help="threshold value for zncc", type=float, default=0.8
     )
     parser.add_argument("--reduction", help="external reduction factor", type=float, default=1.0)
-    parser.add_argument("-A", "--acquire", help="", action="store_true")
+    parser.add_argument("--acquire", help="mark points with acquire flag", type=int, default=1)
     parser.add_argument(
         "--groupRadius", help="groupRadius in µm", type=float, default=7.0
     )
@@ -64,7 +64,7 @@ def main():
     groupRadius = args.groupRadius
     pixelSize = args.pixelSize
     numGroups = args.numGroups
-    acquire = int(args.acquire)
+    acquire = args.acquire
     blurImage = not args.noBlurImage
     blurTemplate = not args.noBlurTemplate
     options = NavOptions(groupOption, groupRadius, pixelSize, numGroups, acquire)
