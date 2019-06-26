@@ -30,8 +30,9 @@ def qImgToNp(qimg):
 
 def drawCross(img: "ndarray", x, y):
     red = (255, 0, 0, 255)
-    cv2.line(img, (x - 15, y), (x + 15, y), red, 3)
-    cv2.line(img, (x, y - 15), (x, y + 15), red, 3)
+    thickness = 2
+    cv2.line(img, (x - 15, y), (x + 15, y), red, thickness)
+    cv2.line(img, (x, y - 15), (x, y + 15), red, thickness)
 
 
 def drawCrosses(img: "ndarray", coords):
