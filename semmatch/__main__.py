@@ -35,7 +35,7 @@ def main():
     parser.add_argument(
         "--threshold", help="threshold value for zncc", type=float, default=0.8
     )
-    parser.add_argument("--bin", help="external binning factor", type=int, default=1)
+    parser.add_argument("--reduction", help="external reduction factor", type=float, default=1.0)
     parser.add_argument("-A", "--acquire", help="", action="store_true")
     parser.add_argument(
         "--groupRadius", help="groupRadius in µm", type=float, default=7.0
@@ -54,7 +54,7 @@ def main():
 
     navfile = args.navfile
     image = args.image
-    binning = args.bin
+    reduction = args.reduction
     mapLabel = args.mapLabel
     newLabel = args.newLabel
     output = args.output
@@ -68,6 +68,9 @@ def main():
     blurImage = not args.noBlurImage
     blurTemplate = not args.noBlurTemplate
     options = NavOptions(groupOption, groupRadius, pixelSize, numGroups, acquire)
+
+    # clear output file to prevent merging previous points
+    createAutodoc(output, [])
 
     # unnecessary options messages
     if groupOption != 1:
@@ -99,21 +102,18 @@ def main():
         )
         exit()
 
-    # clear output file to prevent merging previous points
-    createAutodoc(output, [])
-
     # read and downsize images if necessary
     image = imageio.imread(image)
     if template is not None:
         template = imageio.imread(template)
-    MAX_DIM_BEFORE_DOWNSCALE = 2000
+    MAX_DIM_BEFORE_INTERNAL_REDUCTION = 2000
     max_dimension = max(image.shape)
-    downscale = 1
-    if max_dimension > MAX_DIM_BEFORE_DOWNSCALE:
-        downscale = float(max_dimension / MAX_DIM_BEFORE_DOWNSCALE)
-        image = imresize(image, 1 / downscale, interp="lanczos")
+    internal_reduction = 1.0
+    if max_dimension > MAX_DIM_BEFORE_INTERNAL_REDUCTION:
+        internal_reduction = float(max_dimension / MAX_DIM_BEFORE_INTERNAL_REDUCTION)
+        image = imresize(image, 1 / internal_reduction, interp="lanczos")
     if template is not None:
-        template = imresize(template, 1 / (downscale * binning), interp="lanczos")
+        template = imresize(template, 1 / (internal_reduction * reduction), interp="lanczos")
 
     if args.gui == True:
         import semmatch.gui
@@ -137,7 +137,7 @@ def main():
             image, template, threshold, blurImage=blurImage, blurTemplate=blurTemplate
         )
     pts = [
-        Pt(int(binning * downscale * x), int(binning * downscale * y)) for x, y in pts
+        Pt(int(reduction * internal_reduction * x), int(reduction * internal_reduction * y)) for x, y in pts
     ]
 
     if len(pts) == 0:
