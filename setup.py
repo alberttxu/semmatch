@@ -1,6 +1,6 @@
 import setuptools
 
-with open('requirements.txt') as f:
+with open("requirements.txt") as f:
     required = f.read().splitlines()
 
 setuptools.setup(
@@ -11,9 +11,10 @@ setuptools.setup(
     description="template matching tool for SerialEM",
     packages=setuptools.find_packages(),
     install_requires=required,
-    entry_points={
-        'console_scripts': [
-            'semmatch = semmatch.__main__:main'
-        ]
-    }
+    entry_points={"console_scripts": ["semmatch = semmatch.__main__:main"]},
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+    ],
 )

@@ -5,3 +5,6 @@ env/
 testenv/
 scratch/
 */__pycache__
+build/
+dist/
+semmatch.egg-info/
