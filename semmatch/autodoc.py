@@ -1,4 +1,5 @@
 import random
+import os
 from semmatch.groups import (
     greedyPathThroughPts,
     makeGroupsOfPoints,
@@ -10,8 +11,12 @@ from semmatch.groups import (
 
 def openNavfile(navfile) -> dict:
     nav = {}
-    with open(navfile) as f:
-        data = f.read()
+    try:
+        with open(navfile) as f:
+            data = f.read()
+    except FileNotFoundError:
+        print("could not find %s in current working directory: %s" % (navfile, os.getcwd()))
+        exit()
     sections = data.split("\n\n")
     if "AdocVersion" not in sections[0]:
         raise Exception("could not find AdocVersion")
