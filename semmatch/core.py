@@ -10,7 +10,7 @@ Pt = namedtuple("Pt", "x y")
 
 # output nav grouping/acquire options
 NavOptions = namedtuple(
-    "NavOptions", "groupOption groupRadius pixelSize numGroups acquire"
+    "NavOptions", "groupOption groupRadius pixelSize numGroups ptsPerGroup acquire"
 )
 
 

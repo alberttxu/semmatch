@@ -28,15 +28,19 @@ def main():
     parser.add_argument("--gui", help="interactive gui mode", action="store_true")
     parser.add_argument(
         "--groupOption",
-        help="grouping option for points; 0 = no groups; 1 = groups within mesh (requires --groupRadius and --pixelSize; 2 = entire mesh as one group; 3 = k-means clustering",
+        help="grouping option for points; 0 = no groups; 1 = groups within mesh (requires --groupRadius and --pixelSize; 2 = entire mesh as one group; 3 = specify number of groups; 4 = specify number of points per group",
         type=int,
         default=0,
     )
     parser.add_argument(
         "--threshold", help="threshold value for zncc", type=float, default=0.8
     )
-    parser.add_argument("--reduction", help="external reduction factor", type=float, default=1.0)
-    parser.add_argument("--acquire", help="mark points with acquire flag", type=int, default=1)
+    parser.add_argument(
+        "--reduction", help="external reduction factor", type=float, default=1.0
+    )
+    parser.add_argument(
+        "--acquire", help="mark points with acquire flag", type=int, default=1
+    )
     parser.add_argument(
         "--groupRadius", help="groupRadius in µm", type=float, default=7.0
     )
@@ -46,6 +50,9 @@ def main():
         help="number of groups for k-means groupOption",
         type=int,
         default=10,
+    )
+    parser.add_argument(
+        "--ptsPerGroup", help="specify number of points per group", type=int, default=8
     )
     parser.add_argument("--noBlurImage", help="", action="store_true")
     parser.add_argument("--noBlurTemplate", help="", action="store_true")
@@ -64,10 +71,13 @@ def main():
     groupRadius = args.groupRadius
     pixelSize = args.pixelSize
     numGroups = args.numGroups
+    ptsPerGroup = args.ptsPerGroup
     acquire = args.acquire
     blurImage = not args.noBlurImage
     blurTemplate = not args.noBlurTemplate
-    options = NavOptions(groupOption, groupRadius, pixelSize, numGroups, acquire)
+    options = NavOptions(
+        groupOption, groupRadius, pixelSize, numGroups, ptsPerGroup, acquire
+    )
 
     # clear output file to prevent merging previous points
     createAutodoc(output, [])
@@ -84,7 +94,11 @@ def main():
             )
     if groupOption != 3 and numGroups is not None:
         print(
-            "numGroups will be ignored because groupOption is not 3 (k-means clustering)"
+            "numGroups will be ignored because groupOption is not 3 (specify number of groups)"
+        )
+    if groupOption != 4 and ptsPerGroup is not None:
+        print(
+            "ptsPerGroup will be ignored because groupOption is not 4 (specify number of points per group)"
         )
 
     nav = openNavfile(navfile)
@@ -113,7 +127,9 @@ def main():
         internal_reduction = float(max_dimension / MAX_DIM_BEFORE_INTERNAL_REDUCTION)
         image = imresize(image, 1 / internal_reduction, interp="lanczos")
     if template is not None:
-        template = imresize(template, 1 / (internal_reduction * reduction), interp="lanczos")
+        template = imresize(
+            template, 1 / (internal_reduction * reduction), interp="lanczos"
+        )
 
     if args.gui == True:
         import semmatch.gui
@@ -137,7 +153,11 @@ def main():
             image, template, threshold, blurImage=blurImage, blurTemplate=blurTemplate
         )
     pts = [
-        Pt(int(reduction * internal_reduction * x), int(reduction * internal_reduction * y)) for x, y in pts
+        Pt(
+            int(reduction * internal_reduction * x),
+            int(reduction * internal_reduction * y),
+        )
+        for x, y in pts
     ]
 
     if len(pts) == 0:

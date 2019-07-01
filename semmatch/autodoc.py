@@ -15,7 +15,10 @@ def openNavfile(navfile) -> dict:
         with open(navfile) as f:
             data = f.read()
     except FileNotFoundError:
-        print("could not find %s in current working directory: %s" % (navfile, os.getcwd()))
+        print(
+            "could not find %s in current working directory: %s"
+            % (navfile, os.getcwd())
+        )
         exit()
     sections = data.split("\n\n")
     if "AdocVersion" not in sections[0]:
@@ -163,7 +166,7 @@ def ptsToNavPts(
             )
             subLabel += 1
         label += 1
-    elif options.groupOption == 3:  # k-means
+    elif options.groupOption == 3:  # numGroups
         groups = []
         for group in k_means(coords, options.numGroups):
             groupLeader = closestPtToCentroid(group)
@@ -189,8 +192,37 @@ def ptsToNavPts(
                 )
                 subLabel += 1
             label += 1
+    elif options.groupOption == 4:  # points per group
+        groups = []
+        numGroups = len(coords) // options.ptsPerGroup
+        if numGroups == 0:
+            numGroups = 1
+        for group in k_means(coords, numGroups):
+            groupLeader = closestPtToCentroid(group)
+            group.remove(groupLeader)
+            group = [groupLeader] + greedyPathThroughPts(group)
+            groups.append(group)
+        groups.sort(key=lambda group: group[0][0])  # sort by group leader's x position
+
+        for group in groups:
+            subLabel = 1
+            groupID = random.randint(10 ** 9, 2 * 10 ** 9)
+            for pt in group:
+                navPoints.append(
+                    NavFilePoint(
+                        f"{label}-{subLabel}",
+                        regis,
+                        *pt,
+                        zHeight,
+                        drawnID,
+                        groupID=groupID,
+                        acquire=options.acquire,
+                    )
+                )
+                subLabel += 1
+            label += 1
     else:
-        raise ValueError("groupOption needs to be 0, 1, 2, or 3")
+        raise ValueError("groupOption needs to be 0, 1, 2, 3 or 4")
     return navPoints
 
 

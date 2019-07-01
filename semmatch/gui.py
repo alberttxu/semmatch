@@ -204,7 +204,8 @@ class Sidebar(QWidget):
         self.cmboxGroupPts.addItem("No Groups")
         self.cmboxGroupPts.addItem("Groups within mesh")
         self.cmboxGroupPts.addItem("Entire mesh as one group")
-        self.cmboxGroupPts.addItem("K-Means clustering")
+        self.cmboxGroupPts.addItem("Number of Groups")
+        self.cmboxGroupPts.addItem("Number of Points per Group")
         self.cmboxGroupPts.currentIndexChanged.connect(self._selectGroupOption)
         self.groupRadiusLabel = QLabel("Group Radius")
         self.groupRadiusLineEdit = QLineEdit()
@@ -225,12 +226,21 @@ class Sidebar(QWidget):
         self.pixelSizeLabelnm = QLabel("nm")
 
         self.numGroupsLabel = QLabel("Number of groups")
-        self.kmeansSB = QSpinBox()
-        self.kmeansSB.setMinimum(1)
-        self.kmeansSB.setMaximum(20)
-        self.kmeansSB.setValue(navOptions.numGroups)
-        self.kmeansSB.valueChanged.connect(
-            lambda: self._setNumGroups(self.kmeansSB.value())
+        self.numGroupsSB = QSpinBox()
+        self.numGroupsSB.setMinimum(1)
+        self.numGroupsSB.setMaximum(20)
+        self.numGroupsSB.setValue(navOptions.numGroups)
+        self.numGroupsSB.valueChanged.connect(
+            lambda: self._setNumGroups(self.numGroupsSB.value())
+        )
+
+        self.ptsPerGroupLabel = QLabel("Points per group")
+        self.ptsPerGroupSB = QSpinBox()
+        self.ptsPerGroupSB.setMinimum(1)
+        self.ptsPerGroupSB.setMaximum(20)
+        self.ptsPerGroupSB.setValue(navOptions.ptsPerGroup)
+        self.ptsPerGroupSB.valueChanged.connect(
+            lambda: self._setPtsPerGroup(self.ptsPerGroupSB.value())
         )
 
         # layout
@@ -250,9 +260,6 @@ class Sidebar(QWidget):
         vlay.addWidget(self.cbAcquire)
         vlay.addWidget(QLabel("Grouping option"))
         vlay.addWidget(self.cmboxGroupPts)
-        self.kmeansLayout = QGridLayout()
-        self.kmeansLayout.addWidget(self.numGroupsLabel, 1, 0)
-        self.kmeansLayout.addWidget(self.kmeansSB, 1, 2)
         self.groupInMeshLay = QGridLayout()
         self.groupInMeshLay.addWidget(self.groupRadiusLabel, 1, 0)
         self.groupInMeshLay.addWidget(self.groupRadiusLineEdit, 1, 1)
@@ -261,7 +268,14 @@ class Sidebar(QWidget):
         self.groupInMeshLay.addWidget(self.pixelSizeLineEdit, 2, 1)
         self.groupInMeshLay.addWidget(self.pixelSizeLabelnm, 2, 2)
         vlay.addLayout(self.groupInMeshLay)
-        vlay.addLayout(self.kmeansLayout)
+        self.numGroupsLayout = QGridLayout()
+        self.numGroupsLayout.addWidget(self.numGroupsLabel, 1, 0)
+        self.numGroupsLayout.addWidget(self.numGroupsSB, 1, 2)
+        vlay.addLayout(self.numGroupsLayout)
+        self.ptsPerGroupLayout = QGridLayout()
+        self.ptsPerGroupLayout.addWidget(self.ptsPerGroupLabel, 1, 0)
+        self.ptsPerGroupLayout.addWidget(self.ptsPerGroupSB, 1, 2)
+        vlay.addLayout(self.ptsPerGroupLayout)
         self.cmboxGroupPts.setCurrentIndex(navOptions.groupOption)
         self._selectGroupOption(navOptions.groupOption)
         vlay.addStretch(1)
@@ -318,6 +332,7 @@ class Sidebar(QWidget):
             navOptions.groupRadius,
             navOptions.pixelSize,
             navOptions.numGroups,
+            navOptions.ptsPerGroup,
             int(self.cbAcquire.isChecked()),
         )
         global pts
@@ -340,6 +355,7 @@ class Sidebar(QWidget):
             groupRadius,
             navOptions.pixelSize,
             navOptions.numGroups,
+            navOptions.ptsPerGroup,
             navOptions.acquire,
         )
 
@@ -358,6 +374,7 @@ class Sidebar(QWidget):
             navOptions.groupRadius,
             pixelSize,
             navOptions.numGroups,
+            navOptions.ptsPerGroup,
             navOptions.acquire,
         )
 
@@ -368,6 +385,18 @@ class Sidebar(QWidget):
             navOptions.groupRadius,
             navOptions.pixelSize,
             numGroups,
+            navOptions.ptsPerGroup,
+            navOptions.acquire,
+        )
+
+    def _setPtsPerGroup(self, ptsPerGroup):
+        global navOptions
+        navOptions = NavOptions(
+            navOptions.groupOption,
+            navOptions.groupRadius,
+            navOptions.pixelSize,
+            navOptions.numGroups,
+            ptsPerGroup,
             navOptions.acquire,
         )
 
@@ -378,18 +407,21 @@ class Sidebar(QWidget):
             navOptions.groupRadius,
             navOptions.pixelSize,
             navOptions.numGroups,
+            navOptions.ptsPerGroup,
             navOptions.acquire,
         )
         if groupOption == 1:  # groups within mesh
-            self.numGroupsLabel.hide()
-            self.kmeansSB.hide()
             self.groupRadiusLabel.show()
             self.groupRadiusLineEdit.show()
             self.groupRadiusLabelµm.show()
             self.pixelSizeLabel.show()
             self.pixelSizeLineEdit.show()
             self.pixelSizeLabelnm.show()
-        elif groupOption == 3:  # k-means
+            self.numGroupsLabel.hide()
+            self.numGroupsSB.hide()
+            self.ptsPerGroupLabel.hide()
+            self.ptsPerGroupSB.hide()
+        elif groupOption == 3:  # numGroups
             self.groupRadiusLabel.hide()
             self.groupRadiusLineEdit.hide()
             self.groupRadiusLabelµm.hide()
@@ -397,7 +429,20 @@ class Sidebar(QWidget):
             self.pixelSizeLineEdit.hide()
             self.pixelSizeLabelnm.hide()
             self.numGroupsLabel.show()
-            self.kmeansSB.show()
+            self.numGroupsSB.show()
+            self.ptsPerGroupLabel.hide()
+            self.ptsPerGroupSB.hide()
+        elif groupOption == 4:  # ptsPerGroup
+            self.groupRadiusLabel.hide()
+            self.groupRadiusLineEdit.hide()
+            self.groupRadiusLabelµm.hide()
+            self.pixelSizeLabel.hide()
+            self.pixelSizeLineEdit.hide()
+            self.pixelSizeLabelnm.hide()
+            self.numGroupsLabel.hide()
+            self.numGroupsSB.hide()
+            self.ptsPerGroupLabel.show()
+            self.ptsPerGroupSB.show()
         else:
             self.groupRadiusLabel.hide()
             self.groupRadiusLineEdit.hide()
@@ -406,7 +451,9 @@ class Sidebar(QWidget):
             self.pixelSizeLineEdit.hide()
             self.pixelSizeLabelnm.hide()
             self.numGroupsLabel.hide()
-            self.kmeansSB.hide()
+            self.numGroupsSB.hide()
+            self.ptsPerGroupLabel.hide()
+            self.ptsPerGroupSB.hide()
         self.repaint()
 
 
@@ -481,7 +528,9 @@ class MainWindow(QMainWindow):
         self.root.setAcquire(acquire)
 
 
-def main(image, template, threshold, options: "NavOptions", blurImage=True, blurTemplate=True):
+def main(
+    image, template, threshold, options: "NavOptions", blurImage=True, blurTemplate=True
+):
     global navOptions
     navOptions = options
 
