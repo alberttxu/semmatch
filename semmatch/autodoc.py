@@ -133,6 +133,7 @@ def ptsToNavPts(
             exit()
 
         for group in makeGroupsOfPoints(coords, groupRadiusPix):
+            group = greedyPathThroughPts(group)
             subLabel = 1
             groupID = random.randint(10 ** 9, 2 * 10 ** 9)
             for pt in group:
