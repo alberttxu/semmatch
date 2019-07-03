@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 from PyQt5.QtCore import Qt, QRect, QSize
 from PyQt5.QtWidgets import (
     QApplication,
@@ -298,6 +299,8 @@ class Sidebar(QWidget):
             popup(self, "either image or template missing")
             return
 
+        self.parentWidget().parentWidget().statusBar().showMessage("searching...")
+        startTime = time.time()
         global pts
         pts = templateMatch(
             qImgToNp(image),
@@ -306,10 +309,16 @@ class Sidebar(QWidget):
             blurImage=self.cbBlurImg.isChecked(),
             blurTemplate=self.cbBlurTemp.isChecked(),
         )
+        endTime = time.time()
 
         viewer = self.parentWidget().viewer
         viewer.searchedImg = drawCoords(viewer.originalImg, pts)
         viewer._setActiveImg(viewer.searchedImg)
+
+        self.parentWidget().parentWidget().statusBar().showMessage(
+            "%d matches found in %.2f sec" % (len(pts), endTime - startTime)
+        )
+
         self.repaint()
 
     def printCoordinates(self):
@@ -324,6 +333,7 @@ class Sidebar(QWidget):
         viewer._setActiveImg(viewer.originalImg)
         viewer.searchedImg = QImage()
         viewer._refresh()
+        self.parentWidget().parentWidget().statusBar().clearMessage()
 
     def saveAndQuit(self):
         global navOptions
