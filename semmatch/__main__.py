@@ -119,7 +119,12 @@ def main():
     # read and downsize images if necessary
     image = imageio.imread(image)
     if template is not None:
-        template = imageio.imread(template)
+        try:
+            template = imageio.imread(template)
+        except Exception as e:
+            print(e)
+            print("error reading in template %s; continuing without template" % template)
+            template = None
     MAX_DIM_BEFORE_INTERNAL_REDUCTION = 2000
     max_dimension = max(image.shape)
     internal_reduction = 1.0
