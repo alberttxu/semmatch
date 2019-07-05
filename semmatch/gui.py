@@ -191,9 +191,6 @@ class Sidebar(QWidget):
         self.threshDisp.setValue(0.8)
         buttonSearch = QPushButton("Search")
         buttonSearch.clicked.connect(self._templateSearch)
-        buttonPrintCoord = QPushButton("Print Number of Coordinates")
-        buttonPrintCoord.resize(buttonPrintCoord.sizeHint())
-        buttonPrintCoord.clicked.connect(self.printCoordinates)
         buttonClearPts = QPushButton("Clear Points")
         buttonClearPts.clicked.connect(self._clearPts)
         buttonSaveAndQuit = QPushButton("Save and Quit")
@@ -254,7 +251,6 @@ class Sidebar(QWidget):
         vlay.addWidget(self.slider)
         vlay.addWidget(self.threshDisp)
         vlay.addWidget(buttonSearch)
-        vlay.addWidget(buttonPrintCoord)
         vlay.addWidget(buttonClearPts)
         vlay.addWidget(QLabel())
         vlay.addWidget(buttonSaveAndQuit)
@@ -320,11 +316,6 @@ class Sidebar(QWidget):
         )
 
         self.repaint()
-
-    def printCoordinates(self):
-        global pts
-        popup(self, "%d matches" % len(pts))
-        print("%d matches" % len(pts))
 
     def _clearPts(self):
         global pts
