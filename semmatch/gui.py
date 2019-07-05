@@ -541,6 +541,7 @@ def main(
     global finalPts
     finalPts = []
 
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     app = QApplication([])
     w = MainWindow()
     w.openImage(image)
