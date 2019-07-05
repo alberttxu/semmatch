@@ -28,7 +28,7 @@ def main():
     parser.add_argument("--gui", help="interactive gui mode", action="store_true")
     parser.add_argument(
         "--groupOption",
-        help="grouping option for points; 0 = no groups; 1 = groups within mesh (requires --groupRadius and --pixelSize; 2 = entire mesh as one group; 3 = specify number of groups; 4 = specify number of points per group",
+        help="grouping option for points; 0 = no groups; 1 = groups based on radius (requires --groupRadius and --pixelSize; 2 = all points as one group; 3 = specify number of groups; 4 = specify number of points per group",
         type=int,
         default=0,
     )
@@ -86,11 +86,11 @@ def main():
     if groupOption != 1:
         if groupRadius is not None:
             print(
-                "groupRadius will be ignored because groupOption is not 1 (groups within mesh)"
+                "groupRadius will be ignored because groupOption is not 1 (groups by radius)"
             )
         if pixelSize is not None:
             print(
-                "pixelSize will be ignored because groupOption is not 1 (groups within mesh)"
+                "pixelSize will be ignored because groupOption is not 1 (groups by radius)"
             )
     if groupOption != 3 and numGroups is not None:
         print(
