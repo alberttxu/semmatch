@@ -13,41 +13,63 @@ ScriptName TemplateMatch_GUI
 #             SaveToOtherFile A JPG JPG T.jpg
 #
 
-reduction = 8
+Debug = 0              # True = 1 ; False = 0
+
+### semmatch arguments
 threshold = 0.8
 currentNav = nav.nav
 outputNav = newNav.nav
 image = MMM.jpg
 template = T.jpg
 acquire = 1                                    # True = 1 ; False = 0
-groupOption = 0
+groupOption = 2
     #    0 = no groups
     #    1 = groups based on radius
     #    2 = all points as one group
-    #    3 = specify a certain number of groups (k-means clustering)
+    #    3 = specify a certain number of groups
+    #    4 = specify number of points per group
 
 If $acquire != 1 AND $acquire != 0
    Echo acquire should be either 1 or 0
    Exit
 Endif
 
-If $reduction == 1
-   Echo  Can't reduce by a factor of $reduction. Use a higher number.
+If $Debug == 1
+   debugStr = /k
+ElseIf $Debug == 0
+   debugStr = /c
+Else
+   Echo Debug should be either 1 or 0
    Exit
 Endif
 
 ## load and bin MMM map
 ReportNavItem
 If $RepVal5 != 2        # if not a map item
-   Echo -> Not a map item, exit!
+   Echo -> Not a map item, Exiting
    Exit
-EndIf
+Endif
 MAP = $navLabel
 Echo Map Label: $MAP
 SetUserSetting BufferToReadInto 16
 SetUserSetting LoadMapsUnbinned 1
 LoadNavMap
-ReduceImage Q $reduction
+
+# reduce image if larger than 2000x2000
+maxdimLimit = 2000
+ImageProperties Q width height
+maxdim = $width
+If $width < $height
+   maxdim = $height
+Endif
+
+If $maxdim < $maxdimLimit
+   Copy Q A
+   reduction = 1
+Else
+   reduction = $maxdim / $maxdimLimit
+   ReduceImage Q $reduction
+Endif
 Show Q
 
 ## make a jpeg image
@@ -57,7 +79,7 @@ Echo saved $image
 ReportOtherItem -1
 newLabel = $navIntLabel + 1
 
-RunInShell cmd /c " "semmatch" \
+RunInShell cmd $debugStr " "semmatch" \
 "--gui" \
 "--navfile" "$currentNav" \
 "--reduction" "$reduction" \
@@ -68,8 +90,10 @@ RunInShell cmd /c " "semmatch" \
 "--threshold" "$threshold" \
 "--groupOption" "$groupOption" \
 "--output" "$outputNav" \
+"--noBlurTemplate" \
+"--noBlurImage" \
 "--acquire" "$acquire" "
 
 MergeNavFile $outputNav
-
 Show Q
+
