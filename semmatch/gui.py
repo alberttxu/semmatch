@@ -22,6 +22,7 @@ from PyQt5.QtWidgets import (
     QDoubleSpinBox,
     QComboBox,
     QSpinBox,
+    QSizePolicy
 )
 from PyQt5.QtGui import QImage, QPixmap, QKeySequence, QPainter, QBrush, QColor
 from semmatch.core import NavOptions, templateMatch
@@ -191,11 +192,13 @@ class Sidebar(QWidget):
         self.threshDisp.setValue(0.8)
         buttonSearch = QPushButton("Search")
         buttonSearch.clicked.connect(self._templateSearch)
+        buttonSearch.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.MinimumExpanding)
+        self.searchLay = QGridLayout()
+        self.searchLay.addWidget(self.slider, 0, 0, 1, 3)
+        self.searchLay.addWidget(self.threshDisp, 1, 0, 1, 2)
+        self.searchLay.addWidget(buttonSearch, 1, 2)
         buttonClearPts = QPushButton("Clear Points")
         buttonClearPts.clicked.connect(self._clearPts)
-        buttonSaveAndQuit = QPushButton("Save and Quit")
-        buttonSaveAndQuit.resize(buttonSaveAndQuit.sizeHint())
-        buttonSaveAndQuit.clicked.connect(self.saveAndQuit)
 
         self.cbAcquire = QCheckBox("Acquire")
         self.cmboxGroupPts = QComboBox()
@@ -241,19 +244,19 @@ class Sidebar(QWidget):
             lambda: self._setPtsPerGroup(self.ptsPerGroupSB.value())
         )
 
+        buttonSaveAndQuit = QPushButton("Save and Quit")
+        buttonSaveAndQuit.resize(buttonSaveAndQuit.sizeHint())
+        buttonSaveAndQuit.clicked.connect(self.saveAndQuit)
+
         # layout
         vlay = QVBoxLayout()
         vlay.addWidget(self.crop_template)
         vlay.addWidget(self.cbBlurTemp)
         vlay.addWidget(self.cbBlurImg)
         vlay.addWidget(QLabel())
-        vlay.addWidget(QLabel("Threshold"))
-        vlay.addWidget(self.slider)
-        vlay.addWidget(self.threshDisp)
-        vlay.addWidget(buttonSearch)
+        vlay.addLayout(self.searchLay)
         vlay.addWidget(buttonClearPts)
         vlay.addWidget(QLabel())
-        vlay.addWidget(buttonSaveAndQuit)
         vlay.addWidget(self.cbAcquire)
         vlay.addWidget(QLabel("Grouping option"))
         vlay.addWidget(self.cmboxGroupPts)
@@ -273,6 +276,9 @@ class Sidebar(QWidget):
         self.ptsPerGroupLayout.addWidget(self.ptsPerGroupLabel, 1, 0)
         self.ptsPerGroupLayout.addWidget(self.ptsPerGroupSB, 1, 2)
         vlay.addLayout(self.ptsPerGroupLayout)
+        vlay.addWidget(QLabel())
+        vlay.addWidget(buttonSaveAndQuit)
+
         self.cmboxGroupPts.setCurrentIndex(navOptions.groupOption)
         self._selectGroupOption(navOptions.groupOption)
         vlay.addStretch(1)
