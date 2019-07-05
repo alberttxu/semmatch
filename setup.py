@@ -5,7 +5,7 @@ with open("requirements.txt") as f:
 
 setuptools.setup(
     name="semmatch",
-    version="0.0.4",
+    version="0.0.5",
     author="Albert Xu",
     author_email="albert.t.xu@gmail.com",
     description="template matching tool for SerialEM",
