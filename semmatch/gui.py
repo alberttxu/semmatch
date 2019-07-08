@@ -183,6 +183,7 @@ class Sidebar(QWidget):
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMaximum(10 ** self.sldPrec)
         self.slider.valueChanged.connect(self._setThreshDisp)
+        self.slider.setFixedHeight(25)
         self.threshDisp = QDoubleSpinBox()
         self.threshDisp.setFixedHeight(40)
         self.threshDisp.setMaximum(1)
