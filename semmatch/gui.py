@@ -244,7 +244,7 @@ class Sidebar(QWidget):
             lambda: self._setPtsPerGroup(self.ptsPerGroupSB.value())
         )
 
-        buttonSaveAndQuit = QPushButton("Save and Quit")
+        buttonSaveAndQuit = QPushButton("\nSave and Quit\n")
         buttonSaveAndQuit.resize(buttonSaveAndQuit.sizeHint())
         buttonSaveAndQuit.clicked.connect(self.saveAndQuit)
 
