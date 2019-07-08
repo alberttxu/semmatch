@@ -22,7 +22,7 @@ outputNav = newNav.nav
 image = MMM.jpg
 template = T.jpg
 acquire = 1                                    # True = 1 ; False = 0
-groupOption = 2
+groupOption = 4
     #    0 = no groups
     #    1 = groups based on radius
     #    2 = all points as one group
@@ -53,6 +53,11 @@ MAP = $navLabel
 Echo Map Label: $MAP
 SetUserSetting BufferToReadInto 16
 SetUserSetting LoadMapsUnbinned 1
+# uncheck Montage Controls "Align pieces in overview"
+ReportUserSetting MontageAlignPieces alignChecked
+If $alignChecked == 1
+   SetUserSetting MontageAlignPieces 0
+Endif
 LoadNavMap
 
 # reduce image if larger than 2000x2000
@@ -95,5 +100,8 @@ RunInShell cmd $debugStr " "semmatch" \
 "--acquire" "$acquire" "
 
 MergeNavFile $outputNav
+If $alignChecked == 1
+   SetUserSetting MontageAlignPieces 1
+Endif
 Show Q
 
