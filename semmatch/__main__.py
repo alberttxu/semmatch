@@ -158,7 +158,7 @@ def main():
             image, template, threshold, blurImage=blurImage, blurTemplate=blurTemplate
         )
 
-    pts = [Pt(x + 1, y) for x,y in pts]
+    pts = [Pt(x + 2, y) for x,y in pts]
     pts = [
         Pt(
             int(reduction * internal_reduction * x),
