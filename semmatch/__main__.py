@@ -2,8 +2,6 @@ def main():
     import argparse
     import sys
     import imageio
-    from scipy.misc import imresize
-    from semmatch.image import ImageHandler
     from semmatch.core import Pt, NavOptions, templateMatch
     from semmatch.autodoc import ptsToNavPts, createAutodoc, openNavfile
 
@@ -150,17 +148,15 @@ def main():
             image, template, threshold, blurImage=blurImage, blurTemplate=blurTemplate
         )
 
+    # compensate round off error from reduction
     pts = [Pt(x + 2, y) for x, y in pts]
     pts = [Pt(int(reduction * x), int(reduction * y)) for x, y in pts]
 
     if len(pts) == 0:
         print("no matches found; exiting without creating %s" % output)
         exit()
-
     navPts = ptsToNavPts(pts, nav, mapLabel, newLabel, options)
-
     createAutodoc(output, navPts)
-
     print("%s created" % output)
 
 

@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import (
     QDoubleSpinBox,
     QComboBox,
     QSpinBox,
-    QSizePolicy
+    QSizePolicy,
 )
 from PyQt5.QtGui import QImage, QPixmap, QKeySequence, QPainter, QBrush, QColor
 from semmatch.core import NavOptions, templateMatch
