@@ -1,25 +1,19 @@
 ScriptName TemplateMatch_GUI
 
-### Before running this script, make sure:
-#   1.  The working directory is set to where the navigator file is.
-#           This can be done via:
-#              Menubar->Script->Edit/Run one Line
-#              In any of the 5 prompts, type UserSetDirectory and click Run.
-#              Select the folder containing the navigator file.
-#   2.  Save a template of a hole/pattern as a jpg image.
-#         Crop a hole using ctrl+shift+drag,
-#             and then select Menubar->Process-> Crop Image.
-#         Then using the Edit/Run one Line prompt, run
-#             SaveToOtherFile A JPG JPG T.jpg
+### Before running this script:
+#     (Optional) Save a template of a hole/pattern as a jpg image.
+#             1. Crop a hole using ctrl+shift+drag,
+#             2. Menubar->Process-> Crop Image.
+#             3. Using the Edit/Run one Line prompt, run
+#                      SaveToOtherFile A JPG JPG T.jpg
 #
 
+# If something goes wrong, set Debug = 1
 Debug = 0              # True = 1 ; False = 0
 
 ### semmatch arguments
 threshold = 0.8
-outputNav = semmatch_nav.nav
-image = MMM.jpg
-template = T.jpg
+
 acquire = 1                                    # True = 1 ; False = 0
 groupOption = 4
     #    0 = no groups
@@ -27,6 +21,11 @@ groupOption = 4
     #    2 = all points as one group
     #    3 = specify a certain number of groups
     #    4 = specify number of points per group
+
+# names of temporary files used by semmatch
+outputNav = semmatch_nav.nav
+image = MMM.jpg
+template = T.jpg
 
 ReportIfNavOpen
 If $reportedValue1 != 2
@@ -52,7 +51,7 @@ Endif
 ## load and bin MMM map
 ReportNavItem
 If $RepVal5 != 2        # if not a map item
-   Echo -> Not a map item, Exiting
+   Echo Not a map item. Select a Map item from the navigator.
    Exit
 Endif
 MAP = $navLabel
