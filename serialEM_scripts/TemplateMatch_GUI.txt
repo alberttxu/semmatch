@@ -17,8 +17,7 @@ Debug = 0              # True = 1 ; False = 0
 
 ### semmatch arguments
 threshold = 0.8
-currentNav = nav.nav
-outputNav = newNav.nav
+outputNav = semmatch_nav.nav
 image = MMM.jpg
 template = T.jpg
 acquire = 1                                    # True = 1 ; False = 0
@@ -28,6 +27,13 @@ groupOption = 4
     #    2 = all points as one group
     #    3 = specify a certain number of groups
     #    4 = specify number of points per group
+
+ReportIfNavOpen
+If $reportedValue1 != 2
+   Exit
+Endif
+ReportNavFile
+navfile = $reportedValue1
 
 If $acquire != 1 AND $acquire != 0
    Echo acquire should be either 1 or 0
@@ -86,7 +92,7 @@ newLabel = $navIntLabel + 1
 
 RunInShell cmd $debugStr " "semmatch" \
 "--gui" \
-"--navfile" "$currentNav" \
+"--navfile" "$navfile" \
 "--reduction" "$reduction" \
 "--image" "$image" \
 "--template" "$template" \

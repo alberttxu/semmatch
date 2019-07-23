@@ -1,7 +1,10 @@
 def main():
     import argparse
     import sys
+
     import imageio
+    from scipy.misc import imresize
+
     from semmatch.core import Pt, NavOptions, templateMatch
     from semmatch.autodoc import ptsToNavPts, createAutodoc, openNavfile
 
@@ -119,6 +122,9 @@ def main():
     if template is not None:
         try:
             template = imageio.imread(template)
+            template = imresize(
+                template, 1 / (reduction), interp="lanczos"
+            )
         except Exception as e:
             print(e)
             print(
