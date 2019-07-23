@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import (
     QDoubleSpinBox,
     QComboBox,
     QSpinBox,
-    QSizePolicy
+    QSizePolicy,
 )
 from PyQt5.QtGui import QImage, QPixmap, QKeySequence, QPainter, QBrush, QColor
 from semmatch.core import NavOptions, templateMatch
@@ -190,7 +190,6 @@ class Sidebar(QWidget):
         self.threshDisp.setSingleStep(0.01)
         self.threshDisp.setDecimals(self.sldPrec)
         self.threshDisp.valueChanged.connect(self._setThreshSlider)
-        self.threshDisp.setValue(0.8)
         buttonSearch = QPushButton("Search")
         buttonSearch.clicked.connect(self._templateSearch)
         buttonSearch.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.MinimumExpanding)
@@ -495,6 +494,12 @@ class MainWidget(QWidget):
     def setAcquire(self, acquire: bool):
         self.sidebar.cbAcquire.setChecked(acquire)
 
+    def setThreshold(self, theshold):
+        self.sidebar.threshDisp.setValue(theshold)
+
+    def search(self):
+        self.sidebar._templateSearch()
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -535,6 +540,12 @@ class MainWindow(QMainWindow):
     def setAcquire(self, acquire: bool):
         self.root.setAcquire(acquire)
 
+    def setThreshold(self, theshold):
+        self.root.setThreshold(theshold)
+
+    def search(self):
+        self.root.search()
+
 
 def main(
     image, template, threshold, options: "NavOptions", blurImage=True, blurTemplate=True
@@ -552,11 +563,13 @@ def main(
     app = QApplication([])
     w = MainWindow()
     w.openImage(image)
+    w.setBlurImage(blurImage)
+    w.setAcquire(navOptions.acquire)
+    w.setThreshold(threshold)
     if template is not None:
         w.setTemplate(template)
         w.setBlurTemplate(blurTemplate)
-    w.setBlurImage(blurImage)
-    w.setAcquire(navOptions.acquire)
+        w.search()
 
     app.exec_()
 

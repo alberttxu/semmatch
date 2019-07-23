@@ -1,9 +1,10 @@
 def main():
     import argparse
     import sys
+
     import imageio
     from scipy.misc import imresize
-    from semmatch.image import ImageHandler
+
     from semmatch.core import Pt, NavOptions, templateMatch
     from semmatch.autodoc import ptsToNavPts, createAutodoc, openNavfile
 
@@ -121,20 +122,15 @@ def main():
     if template is not None:
         try:
             template = imageio.imread(template)
+            template = imresize(
+                template, 1 / (reduction), interp="lanczos"
+            )
         except Exception as e:
             print(e)
-            print("error reading in template %s; continuing without template" % template)
+            print(
+                "error reading in template %s; continuing without template" % template
+            )
             template = None
-    MAX_DIM_BEFORE_INTERNAL_REDUCTION = 2000
-    max_dimension = max(image.shape)
-    internal_reduction = 1.0
-    if max_dimension > MAX_DIM_BEFORE_INTERNAL_REDUCTION:
-        internal_reduction = float(max_dimension / MAX_DIM_BEFORE_INTERNAL_REDUCTION)
-        image = imresize(image, 1 / internal_reduction, interp="lanczos")
-    if template is not None:
-        template = imresize(
-            template, 1 / (internal_reduction * reduction), interp="lanczos"
-        )
 
     if args.gui == True:
         import semmatch.gui
@@ -158,23 +154,15 @@ def main():
             image, template, threshold, blurImage=blurImage, blurTemplate=blurTemplate
         )
 
-    pts = [Pt(x + 2, y) for x,y in pts]
-    pts = [
-        Pt(
-            int(reduction * internal_reduction * x),
-            int(reduction * internal_reduction * y),
-        )
-        for x, y in pts
-    ]
+    # compensate round off error from reduction
+    pts = [Pt(x + 2, y) for x, y in pts]
+    pts = [Pt(int(reduction * x), int(reduction * y)) for x, y in pts]
 
     if len(pts) == 0:
         print("no matches found; exiting without creating %s" % output)
         exit()
-
     navPts = ptsToNavPts(pts, nav, mapLabel, newLabel, options)
-
     createAutodoc(output, navPts)
-
     print("%s created" % output)
 
 

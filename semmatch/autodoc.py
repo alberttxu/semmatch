@@ -5,7 +5,6 @@ from semmatch.groups import (
     makeGroupsOfPoints,
     k_means,
     closestPtToCentroid,
-    clockwiseSort,
 )
 
 
