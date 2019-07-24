@@ -1,7 +1,7 @@
 import os
 import sys
 import time
-from PyQt5.QtCore import Qt, QRect, QSize
+from PyQt5.QtCore import Qt, QRect, QSize, QPoint, QSettings
 from PyQt5.QtWidgets import (
     QApplication,
     QWidget,
@@ -53,16 +53,17 @@ class ImageViewer(QScrollArea):
 
     def _refresh(self):
         # save slider values to calculate new positions after zoom
-        hBar = self.horizontalScrollBar()
-        vBar = self.verticalScrollBar()
+        hbar = self.horizontalScrollBar()
+        vbar = self.verticalScrollBar()
+
         try:
-            hBarRatio = hBar.value() / hBar.maximum()
+            hbarRatio = hbar.value() / hbar.maximum()
         except ZeroDivisionError:
-            hBarRatio = 0.5
+            hbarRatio = 0.5
         try:
-            vBarRatio = vBar.value() / vBar.maximum()
+            vbarRatio = vbar.value() / vbar.maximum()
         except ZeroDivisionError:
-            vBarRatio = 0.5
+            vbarRatio = 0.5
 
         # resize
         img = self.activeImg.scaled(
@@ -71,8 +72,9 @@ class ImageViewer(QScrollArea):
         self.label.setPixmap(QPixmap(img))
         self.label.resize(img.size())
         self.label.repaint()
-        hBar.setValue(int(hBarRatio * hBar.maximum()))
-        vBar.setValue(int(vBarRatio * vBar.maximum()))
+
+        hbar.setValue(int(hbarRatio * hbar.maximum()))
+        vbar.setValue(int(vbarRatio * vbar.maximum()))
 
     def _setActiveImg(self, img):
         self.activeImg = img
@@ -345,6 +347,7 @@ class Sidebar(QWidget):
         global pts
         global finalPts
         finalPts = pts
+        self.parentWidget().parentWidget().writeSettings()
         QApplication.quit()
 
     def _setGroupRadius(self, s: str):
@@ -395,6 +398,7 @@ class Sidebar(QWidget):
             navOptions.ptsPerGroup,
             navOptions.acquire,
         )
+        self.numGroupsSB.setValue(navOptions.numGroups)
 
     def _setPtsPerGroup(self, ptsPerGroup):
         global navOptions
@@ -406,6 +410,7 @@ class Sidebar(QWidget):
             ptsPerGroup,
             navOptions.acquire,
         )
+        self.ptsPerGroupSB.setValue(navOptions.ptsPerGroup)
 
     def _selectGroupOption(self, groupOption):
         global navOptions
@@ -463,6 +468,16 @@ class Sidebar(QWidget):
             self.ptsPerGroupSB.hide()
         self.repaint()
 
+    def _refreshNavOptions(self):
+        global navOptions
+        self._setGroupRadius(navOptions.groupRadius)
+        self._setPixelSize(navOptions.pixelSize)
+        self._setNumGroups(navOptions.numGroups)
+        self._setPtsPerGroup(navOptions.ptsPerGroup)
+        self._selectGroupOption(navOptions.groupOption)
+        self.cmboxGroupPts.setCurrentIndex(navOptions.groupOption)
+        self.parentWidget().setAcquire(navOptions.acquire)
+
 
 class MainWidget(QWidget):
     def __init__(self):
@@ -508,6 +523,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.root)
         self.statusBar()
         self.initUI()
+        self.readSettings()
 
     def initUI(self):
         menubar = self.menuBar()
@@ -540,16 +556,56 @@ class MainWindow(QMainWindow):
     def setAcquire(self, acquire: bool):
         self.root.setAcquire(acquire)
 
+    def getThreshold(self):
+        return self.root.sidebar.thresholdVal
+
     def setThreshold(self, theshold):
         self.root.setThreshold(theshold)
 
+    def setGroupOption(self, option):
+        self.root.sidebar._selectGroupOption(option)
+        self.root.sidebar.cmboxGroupPts.setCurrentIndex(option)
+
     def search(self):
         self.root.search()
+
+    def writeSettings(self):
+        settings = QSettings(
+            "University of Massachusetts Medical School CryoEM", "semmatch"
+        )
+        settings.beginGroup("MainWindow")
+        settings.setValue("size", self.size())
+        settings.setValue("pos", self.pos())
+        settings.setValue("threshold", self.getThreshold())
+        settings.setValue("blurImage", self.root.sidebar.cbBlurImg.isChecked())
+        settings.setValue("blurTemplate", self.root.sidebar.cbBlurTemp.isChecked())
+        global navOptions
+        settings.setValue("navOptions", navOptions)
+        settings.endGroup()
+
+    def readSettings(self):
+        settings = QSettings(
+            "University of Massachusetts Medical School CryoEM", "semmatch"
+        )
+        settings.beginGroup("MainWindow")
+        self.resize(settings.value("size", QSize(400, 400)))
+        self.move(settings.value("pos", QPoint(200, 200)))
+        global inputThreshold
+        self.setThreshold(float(settings.value("threshold", inputThreshold)))
+        global navOptions
+        navOptions = settings.value("navOptions", navOptions)
+        self.root.sidebar._refreshNavOptions()
+        self.setBlurImage(settings.value("blurImage") == "true")
+        self.setBlurTemplate(settings.value("blurTemplate") == "true")
+        settings.endGroup()
 
 
 def main(
     image, template, threshold, options: "NavOptions", blurImage=True, blurTemplate=True
 ):
+    global inputThreshold
+    inputThreshold = threshold
+
     global navOptions
     navOptions = options
 
@@ -563,12 +619,8 @@ def main(
     app = QApplication([])
     w = MainWindow()
     w.openImage(image)
-    w.setBlurImage(blurImage)
-    w.setAcquire(navOptions.acquire)
-    w.setThreshold(threshold)
     if template is not None:
         w.setTemplate(template)
-        w.setBlurTemplate(blurTemplate)
         w.search()
 
     app.exec_()
