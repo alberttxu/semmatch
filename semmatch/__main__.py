@@ -18,15 +18,12 @@ def main():
     )
     parser.add_argument("-o", "--output", help="output nav file", required=True)
 
-    # conditionally required
-    parser.add_argument(
-        "--template",
-        help="template image to use; required in non-gui mode",
-        required="--gui" not in sys.argv,
-    )
-
     # optional
     parser.add_argument("--gui", help="interactive gui mode", action="store_true")
+    parser.add_argument(
+        "--template", help="template image to use; required in non-gui mode"
+    )
+
     parser.add_argument(
         "--houghCircles", help="automatic detection", action="store_true"
     )
@@ -160,6 +157,9 @@ def main():
             exit()
     else:
         print("using template matching")
+        if template is None:
+            print("non-gui option must specify template")
+            exit()
         pts = templateMatch(
             image, template, threshold, blurImage=blurImage, blurTemplate=blurTemplate
         )
