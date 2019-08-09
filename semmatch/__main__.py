@@ -5,7 +5,7 @@ def main():
     import imageio
     from scipy.misc import imresize
 
-    from semmatch.core import Pt, NavOptions, templateMatch
+    from semmatch.core import Pt, NavOptions, templateMatch, houghCircles
     from semmatch.autodoc import ptsToNavPts, createAutodoc, openNavfile
 
     parser = argparse.ArgumentParser(description="template matching tool for SerialEM")
@@ -27,6 +27,12 @@ def main():
 
     # optional
     parser.add_argument("--gui", help="interactive gui mode", action="store_true")
+    parser.add_argument(
+        "--houghCircles", help="automatic detection", action="store_true"
+    )
+    parser.add_argument(
+        "--param2", help="threshold for houghCircles", type=int, default=60
+    )
     parser.add_argument(
         "--groupOption",
         help="grouping option for points; 0 = no groups; 1 = groups based on radius (requires --groupRadius and --pixelSize; 2 = all points as one group; 3 = specify number of groups; 4 = specify number of points per group",
@@ -79,6 +85,7 @@ def main():
     options = NavOptions(
         groupOption, groupRadius, pixelSize, numGroups, ptsPerGroup, acquire
     )
+    param2 = args.param2
 
     # clear output file to prevent merging previous points
     createAutodoc(output, [])
@@ -122,9 +129,7 @@ def main():
     if template is not None:
         try:
             template = imageio.imread(template)
-            template = imresize(
-                template, 1 / (reduction), interp="lanczos"
-            )
+            template = imresize(template, 1 / (reduction), interp="lanczos")
         except Exception as e:
             print(e)
             print(
@@ -132,7 +137,11 @@ def main():
             )
             template = None
 
-    if args.gui == True:
+    if args.houghCircles == True:
+        print("using hough circles")
+        pts = houghCircles(image, param2=param2)
+    elif args.gui == True:
+        print("using template matching gui")
         import semmatch.gui
 
         pts, options = semmatch.gui.main(
@@ -150,6 +159,7 @@ def main():
             print("invalid pixel size; aborting")
             exit()
     else:
+        print("using template matching")
         pts = templateMatch(
             image, template, threshold, blurImage=blurImage, blurTemplate=blurTemplate
         )

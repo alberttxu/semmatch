@@ -1,9 +1,11 @@
 from collections import namedtuple
-import cv2
 import math
+
+import cv2
 import numpy as np
-import PIL
+from PIL import Image, ImageFilter
 from scipy.ndimage.filters import gaussian_filter, maximum_filter
+import skimage
 
 # ubiquitous Point type
 Pt = namedtuple("Pt", "x y")
@@ -86,3 +88,189 @@ def templateMatch(
     # multiply back to get correct coordinates
     matches = [Pt(downSample * x, downSample * y) for x, y in matches]
     return matches
+
+
+def downsample(img, max_dim_limit=2000):
+    maxdim = max(img.shape)
+    if maxdim > max_dim_limit:
+        pil = Image.fromarray(img).resize(
+            (
+                int(img.shape[1] / maxdim * max_dim_limit),
+                int(img.shape[0] / maxdim * max_dim_limit),
+            ),
+            resample=Image.LANCZOS,
+        )
+        img = np.array(pil)
+    return img
+
+
+# https://pastebin.com/sBsPX4Y7
+def anisodiff(
+    img, niter=10, kappa=50, gamma=0.1, step=(1.0, 1.0), option=1, ploton=False
+):
+    """
+        Anisotropic diffusion.
+
+        Usage:
+        imgout = anisodiff(im, niter, kappa, gamma, option)
+
+        Arguments:
+                img    - input image
+                niter  - number of iterations
+                kappa  - conduction coefficient 20-100 ?
+                gamma  - max value of .25 for stability
+                step   - tuple, the distance between adjacent pixels in (y,x)
+                option - 1 Perona Malik diffusion equation No 1
+                         2 Perona Malik diffusion equation No 2
+                ploton - if True, the image will be plotted on every iteration
+
+        Returns:
+                imgout   - diffused image.
+
+        kappa controls conduction as a function of gradient.  If kappa is low
+        small intensity gradients are able to block conduction and hence diffusion
+        across step edges.  A large value reduces the influence of intensity
+        gradients on conduction.
+
+        gamma controls speed of diffusion (you usually want it at a maximum of
+        0.25)
+
+        step is used to scale the gradients in case the spacing between adjacent
+        pixels differs in the x and y axes
+
+        Diffusion equation 1 favours high contrast edges over low contrast ones.
+        Diffusion equation 2 favours wide regions over smaller ones.
+
+        Reference:
+        P. Perona and J. Malik.
+        Scale-space and edge detection using ansotropic diffusion.
+        IEEE Transactions on Pattern Analysis and Machine Intelligence,
+        12(7):629-639, July 1990.
+
+        Original MATLAB code by Peter Kovesi
+        School of Computer Science & Software Engineering
+        The University of Western Australia
+        pk @ csse uwa edu au
+        <http://www.csse.uwa.edu.au>
+
+        Translated to Python and optimised by Alistair Muldal
+        Department of Pharmacology
+        University of Oxford
+        <alistair.muldal@pharm.ox.ac.uk>
+
+        June 2000  original version.
+        March 2002 corrected diffusion eqn No 2.
+        July 2012 translated to Python
+        """
+
+    # ...you could always diffuse each color channel independently if you
+    # really want
+    if img.ndim == 3:
+        warnings.warn("Only grayscale images allowed, converting to 2D matrix")
+        img = img.mean(2)
+
+    # initialize output array
+    img = img.astype("float32")
+    imgout = img.copy()
+
+    # initialize some internal variables
+    deltaS = np.zeros_like(imgout)
+    deltaE = deltaS.copy()
+    NS = deltaS.copy()
+    EW = deltaS.copy()
+    gS = np.ones_like(imgout)
+    gE = gS.copy()
+
+    # create the plot figure, if requested
+    if ploton:
+        import pylab as pl
+        from time import sleep
+
+        fig = pl.figure(figsize=(20, 5.5), num="Anisotropic diffusion")
+        ax1, ax2 = fig.add_subplot(1, 2, 1), fig.add_subplot(1, 2, 2)
+
+        ax1.imshow(img, interpolation="nearest")
+        ih = ax2.imshow(imgout, interpolation="nearest", animated=True)
+        ax1.set_title("Original image")
+        ax2.set_title("Iteration 0")
+
+        fig.canvas.draw()
+
+    for ii in range(niter):
+
+        # calculate the diffs
+        deltaS[:-1, :] = np.diff(imgout, axis=0)
+        deltaE[:, :-1] = np.diff(imgout, axis=1)
+
+        # conduction gradients (only need to compute one per dim!)
+        if option == 1:
+            gS = np.exp(-(deltaS / kappa) ** 2.0) / step[0]
+            gE = np.exp(-(deltaE / kappa) ** 2.0) / step[1]
+        elif option == 2:
+            gS = 1.0 / (1.0 + (deltaS / kappa) ** 2.0) / step[0]
+            gE = 1.0 / (1.0 + (deltaE / kappa) ** 2.0) / step[1]
+
+        # update matrices
+        E = gE * deltaE
+        S = gS * deltaS
+
+        # subtract a copy that has been shifted 'North/West' by one
+        # pixel. don't as questions. just do it. trust me.
+        NS[:] = S
+        EW[:] = E
+        NS[1:, :] -= S[:-1, :]
+        EW[:, 1:] -= E[:, :-1]
+
+        # update the image
+        imgout += gamma * (NS + EW)
+
+        if ploton:
+            iterstring = "Iteration %i" % (ii + 1)
+            ih.set_data(imgout)
+            ax2.set_title(iterstring)
+            fig.canvas.draw()
+            # sleep(0.01)
+
+    return imgout.astype(np.uint8)
+
+
+def median_filt(img, radius=5):
+    return np.array(Image.fromarray(img).filter(ImageFilter.MedianFilter(size=radius)))
+
+
+def scharr(img):
+    return (2000 * skimage.filters.scharr(img)).astype("uint8")
+
+
+def prefilter_before_hough(img):
+    img = anisodiff(img, niter=20)
+    img = median_filt(img)
+    img = scharr(img)
+    return img
+
+
+def houghCircles(img, param1=50, param2=60, minDist=30, minRadius=5, maxRadius=45):
+    img = downsample(img)
+    img = prefilter_before_hough(img)
+
+    circles = cv2.HoughCircles(
+        img,
+        cv2.HOUGH_GRADIENT,
+        dp=1,
+        minDist=minDist,
+        param1=param1,
+        param2=param2,
+        minRadius=minRadius,
+        maxRadius=maxRadius,
+    )
+    try:
+        circles = np.uint16(np.around(circles))
+    except AttributeError:
+        circles = None
+
+    if circles is not None:
+        pts = [(x, img.shape[0] - y) for x, y in circles[0][:, :2]]
+    else:
+        pts = []
+
+    return pts
