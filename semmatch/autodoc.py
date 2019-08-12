@@ -29,7 +29,7 @@ def openNavfile(navfile) -> dict:
         sectionData = {}
         for line in section[1:]:
             if "=" in line:
-                key, val = line.split("=")
+                key, val = line.split("=", 1)
                 key = key.strip()
                 val = val.strip()
                 sectionData[key] = val
