@@ -1,6 +1,8 @@
 import functools
 import math
 import operator
+import random
+
 import numpy as np
 from sklearn.cluster import KMeans
 from semmatch.core import squareDist, Pt
@@ -115,3 +117,9 @@ def k_means(pts, k):
         if len(group) > 0:
             groups.append(group)
     return groups
+
+def getRandPts(pts, maxPts):
+    try:
+        return random.sample(pts, maxPts)
+    except ValueError:
+        return pts

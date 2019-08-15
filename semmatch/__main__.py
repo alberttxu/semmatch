@@ -7,6 +7,7 @@ def main():
 
     from semmatch.core import Pt, NavOptions, templateMatch, houghCircles
     from semmatch.autodoc import ptsToNavPts, createAutodoc, openNavfile
+    from semmatch.groups import getRandPts
 
     parser = argparse.ArgumentParser(description="template matching tool for SerialEM")
     # required
@@ -23,7 +24,6 @@ def main():
     parser.add_argument(
         "--template", help="template image to use; required in non-gui mode"
     )
-
     parser.add_argument(
         "--houghCircles", help="automatic detection", action="store_true"
     )
@@ -31,8 +31,16 @@ def main():
         "--param2", help="threshold for houghCircles", type=int, default=60
     )
     parser.add_argument(
+        "--maxPts", help="limit number of pts found via houghCircles", type=int, default=10
+    )
+    parser.add_argument(
         "--groupOption",
-        help="grouping option for points; 0 = no groups; 1 = groups based on radius (requires --groupRadius and --pixelSize; 2 = all points as one group; 3 = specify number of groups; 4 = specify number of points per group",
+        help="grouping option for points;"
+        + "0 = no groups; "
+        + "1 = groups based on radius (requires --groupRadius and --pixelSize);"
+        + "2 = all points as one group;"
+        + "3 = specify number of groups;"
+        + "4 = specify number of points per group",
         type=int,
         default=0,
     )
@@ -83,6 +91,7 @@ def main():
         groupOption, groupRadius, pixelSize, numGroups, ptsPerGroup, acquire
     )
     param2 = args.param2
+    maxPts = args.maxPts
 
     # clear output file to prevent merging previous points
     createAutodoc(output, [])
@@ -137,6 +146,7 @@ def main():
     if args.houghCircles == True:
         print("using hough circles")
         pts = houghCircles(image, param2=param2)
+        pts = getRandPts(pts, maxPts)
     elif args.gui == True:
         print("using template matching gui")
         import semmatch.gui
