@@ -9,4 +9,5 @@ Pillow==5.2.0
 PyQt5==5.11.2
 PyQt5-sip==4.19.12
 scikit-learn==0.21.2
+scikit-image==0.15.0
 scipy==1.1.0
