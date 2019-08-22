@@ -1,8 +1,5 @@
 import setuptools
 
-with open("requirements.txt") as f:
-    required = f.read().splitlines()
-
 setuptools.setup(
     name="semmatch",
     version="0.0.11",
@@ -10,7 +7,15 @@ setuptools.setup(
     author_email="albert.t.xu@gmail.com",
     description="template matching tool for SerialEM",
     packages=setuptools.find_packages(),
-    install_requires=required,
+    install_requires=[
+        "imageio",
+        "numpy",
+        "opencv-python",
+        "PyQt5",
+        "Pillow",
+        "scikit-learn",
+        "scipy",
+    ],
     entry_points={"console_scripts": ["semmatch = semmatch.__main__:main"]},
     classifiers=[
         "Programming Language :: Python :: 3",

@@ -3,9 +3,8 @@ def main():
     import sys
 
     import imageio
-    from scipy.misc import imresize
 
-    from semmatch.core import Pt, NavOptions, templateMatch
+    from semmatch.core import Pt, NavOptions, templateMatch, imresize
     from semmatch.autodoc import ptsToNavPts, createAutodoc, openNavfile
 
     parser = argparse.ArgumentParser(description="template matching tool for SerialEM")
@@ -123,7 +122,7 @@ def main():
         try:
             template = imageio.imread(template)
             template = imresize(
-                template, 1 / (reduction), interp="lanczos"
+                template, 1 / (reduction)
             )
         except Exception as e:
             print(e)

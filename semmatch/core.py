@@ -86,3 +86,12 @@ def templateMatch(
     # multiply back to get correct coordinates
     matches = [Pt(downSample * x, downSample * y) for x, y in matches]
     return matches
+
+
+def imresize(img: "ndarray", factor):
+    return np.array(
+        PIL.Image.fromarray(img).resize(
+            size=(int(img.shape[1] * factor), int(img.shape[0] * factor)),
+            resample=PIL.Image.LANCZOS,
+        )
+    )
