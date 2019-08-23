@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="semmatch",
-    version="0.0.11",
+    version="0.0.12",
     author="Albert Xu",
     author_email="albert.t.xu@gmail.com",
     description="template matching tool for SerialEM",
@@ -13,6 +13,7 @@ setuptools.setup(
         "opencv-python",
         "PyQt5",
         "Pillow",
+        "scikit-image",
         "scikit-learn",
         "scipy",
     ],

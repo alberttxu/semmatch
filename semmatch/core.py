@@ -3,6 +3,7 @@ import math
 
 import cv2
 import numpy as np
+import PIL
 from PIL import Image, ImageFilter
 from scipy.ndimage.filters import gaussian_filter, maximum_filter
 import skimage
