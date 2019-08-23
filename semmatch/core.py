@@ -90,20 +90,6 @@ def templateMatch(
     return matches
 
 
-def downsample(img, max_dim_limit=2000):
-    maxdim = max(img.shape)
-    if maxdim > max_dim_limit:
-        pil = Image.fromarray(img).resize(
-            (
-                int(img.shape[1] / maxdim * max_dim_limit),
-                int(img.shape[0] / maxdim * max_dim_limit),
-            ),
-            resample=Image.LANCZOS,
-        )
-        img = np.array(pil)
-    return img
-
-
 # https://pastebin.com/sBsPX4Y7
 def anisodiff(
     img, niter=10, kappa=50, gamma=0.1, step=(1.0, 1.0), option=1, ploton=False
@@ -250,7 +236,6 @@ def prefilter_before_hough(img):
 
 
 def houghCircles(img, param1=50, param2=60, minDist=30, minRadius=5, maxRadius=45):
-    img = downsample(img)
     img = prefilter_before_hough(img)
 
     circles = cv2.HoughCircles(

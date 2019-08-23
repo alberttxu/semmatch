@@ -31,7 +31,7 @@ def main():
         "--param2", help="threshold for houghCircles", type=int, default=60
     )
     parser.add_argument(
-        "--maxPts", help="limit number of pts found via houghCircles", type=int, default=10
+        "--maxPts", help="limit number of pts found via houghCircles", type=int
     )
     parser.add_argument(
         "--groupOption",
@@ -146,7 +146,8 @@ def main():
     if args.houghCircles == True:
         print("using hough circles")
         pts = houghCircles(image, param2=param2)
-        pts = getRandPts(pts, maxPts)
+        if maxPts is not None:
+            pts = getRandPts(pts, maxPts)
     elif args.gui == True:
         print("using template matching gui")
         import semmatch.gui
