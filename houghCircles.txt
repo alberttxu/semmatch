@@ -1,21 +1,14 @@
-ScriptName TemplateMatch_GUI
-
-### Before running this script:
-#     (Optional) Save a template of a hole/pattern as a jpg image.
-#             1. Crop a hole using ctrl+shift+drag,
-#             2. Menubar->Process-> Crop Image.
-#             3. Using the Edit/Run one Line prompt, run
-#                      SaveToOtherFile A JPG JPG T.jpg
-#
+ScriptName houghCircles
 
 # If something goes wrong, set Debug = 1
 Debug = 0              # True = 1 ; False = 0
 
 ### semmatch arguments
-threshold = 0.8
+param2 = 50   # hough threshold
+maxPts = 20   # randomly selected subset of all found points
 
 acquire = 1                                    # True = 1 ; False = 0
-groupOption = 4
+groupOption = 2
     #    0 = no groups
     #    1 = groups based on radius
     #    2 = all points as one group
@@ -25,7 +18,6 @@ groupOption = 4
 # names of temporary files used by semmatch
 outputNav = semmatch_nav.nav
 image = MMM.jpg
-template = T.jpg
 
 ReportIfNavOpen
 If $reportedValue1 != 2
@@ -93,18 +85,16 @@ ReportOtherItem -1
 newLabel = $navIntLabel + 1
 
 RunInShell cmd $debugStr " "semmatch" \
-"--gui" \
+"--houghCircles" \
+"--maxPts" "$maxPts" \
+"--param2" "$param2" \
 "--navfile" "$navfile" \
 "--reduction" "$reduction" \
 "--image" "$image" \
-"--template" "$template" \
 "--mapLabel" "$MAP" \
 "--newLabel" "$newLabel" \
-"--threshold" "$threshold" \
 "--groupOption" "$groupOption" \
 "--output" "$outputNav" \
-"--noBlurTemplate" \
-"--noBlurImage" \
 "--acquire" "$acquire" "
 
 MergeNavFile $outputNav
