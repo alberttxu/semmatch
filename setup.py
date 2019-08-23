@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="semmatch",
-    version="0.0.12",
+    version="0.0.13",
     author="Albert Xu",
     author_email="albert.t.xu@gmail.com",
     description="template matching tool for SerialEM",

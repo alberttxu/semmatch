@@ -22,17 +22,29 @@ def openNavfile(navfile) -> dict:
     sections = data.split("\n\n")
     if "AdocVersion" not in sections[0]:
         raise Exception("could not find AdocVersion")
-    sections = [section.split("\n") for section in sections[1:]]
-    sections = list(filter(lambda x: x != [""], sections))
+    sections = [list(filter(None, section.split("\n"))) for section in sections[1:]]
+    sections = [s for s in sections if s != []]
     for section in sections:
-        item = section[0][1:-1].split("=")[1].strip()
+        try:
+            item = section[0][1:-1].split("=")[1].strip()
+            if item == '':
+                raise Exception
+        except:
+            print("could not get item label from nav file")
+            print(section)
+            continue
         sectionData = {}
         for line in section[1:]:
-            if "=" in line:
+            try:
                 key, val = line.split("=", 1)
                 key = key.strip()
                 val = val.strip()
                 sectionData[key] = val
+            except:
+                print("error parsing a line in section %s" % item)
+                print(line)
+                print(section)
+                continue
         nav[item] = sectionData
     return nav
 
