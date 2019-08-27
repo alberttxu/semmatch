@@ -28,6 +28,7 @@ ReportNavFile 1
 navfile = $reportedValue1$reportedValue2
 navdir = $reportedValue3
 SetDirectory $navdir
+SaveNavigator
 
 If $acquire != 1 AND $acquire != 0
    Echo acquire should be either 1 or 0
