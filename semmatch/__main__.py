@@ -4,7 +4,14 @@ def main():
 
     import imageio
 
-    from semmatch.core import Pt, NavOptions, templateMatch, imresize, houghCircles
+    from semmatch.core import (
+        Pt,
+        NavOptions,
+        templateMatch,
+        imresize,
+        houghCircles,
+        laceySearch,
+    )
     from semmatch.autodoc import ptsToNavPts, createAutodoc, openNavfile
     from semmatch.groups import getRandPts
 
@@ -24,13 +31,30 @@ def main():
         "--template", help="template image to use; required in non-gui mode"
     )
     parser.add_argument(
-        "--houghCircles", help="automatic detection", action="store_true"
+        "--houghCircles", help="automatic detection for holey grid", action="store_true"
     )
     parser.add_argument(
         "--param2", help="threshold for houghCircles", type=int, default=60
     )
     parser.add_argument(
-        "--maxPts", help="limit number of pts found via houghCircles", type=int
+        "--laceySearch", help="automatic detection for lacey grid", action="store_true"
+    )
+    parser.add_argument(
+        "--laceyThreshLow",
+        help="lower threshold for laceySearch",
+        type=int,
+        default=195,
+    )
+    parser.add_argument(
+        "--laceyThreshHigh",
+        help="upper threshold for laceySearch",
+        type=int,
+        default=245,
+    )
+    parser.add_argument(
+        "--maxPts",
+        help="limit number of pts found via houghCircles or laceySearch",
+        type=int,
     )
     parser.add_argument(
         "--groupOption",
@@ -90,6 +114,8 @@ def main():
         groupOption, groupRadius, pixelSize, numGroups, ptsPerGroup, acquire
     )
     param2 = args.param2
+    laceyThreshLow = args.laceyThreshLow
+    laceyThreshHigh = args.laceyThreshHigh
     maxPts = args.maxPts
 
     # clear output file to prevent merging previous points
@@ -134,9 +160,7 @@ def main():
     if template is not None:
         try:
             template = imageio.imread(template)
-            template = imresize(
-                template, 1 / (reduction)
-            )
+            template = imresize(template, 1 / (reduction))
         except Exception as e:
             print(e)
             print(
@@ -149,6 +173,10 @@ def main():
         pts = houghCircles(image, param2=param2)
         if maxPts is not None:
             pts = getRandPts(pts, maxPts)
+    elif args.laceySearch == True:
+        if maxPts == None:
+            maxPts = 999
+        pts = laceySearch(image, maxPts, laceyThreshLow, laceyThreshHigh)
     elif args.gui == True:
         print("using template matching gui")
         import semmatch.gui
@@ -168,7 +196,7 @@ def main():
             print("invalid pixel size; aborting")
             exit()
     else:
-        print("using template matching")
+        print("using template matching non gui")
         if template is None:
             print("non-gui option must specify template")
             exit()

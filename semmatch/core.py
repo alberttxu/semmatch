@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import PIL
 from PIL import Image, ImageFilter
+import scipy
 from scipy.ndimage.filters import gaussian_filter, maximum_filter
 import skimage
 
@@ -269,3 +270,37 @@ def houghCircles(img, param1=50, param2=60, minDist=30, minRadius=5, maxRadius=4
         pts = []
 
     return pts
+
+
+def to_binary(img, lower, upper):
+    return ((lower < img) & (img < upper)).astype(np.uint8) * 255
+
+
+def find_segment_centers(labelled_img, num_features, maxPts):
+    results = []
+    segments = []
+    for label in range(1, num_features + 1):
+        segment = labelled_img == label
+        area = np.sum(segment)
+        segments.append((label, segment, area))
+    segments = sorted(segments, key=lambda x: x[2])[::-1][:maxPts]
+    for label, segment, _ in segments:
+        center = scipy.ndimage.measurements.center_of_mass(segment)
+        center = (int(center[0]), int(center[1]))
+        results.append(center)
+    return results
+
+
+def find_lacey_holes(img, maxPts, theshold_low, threshold_high):
+    binary_img = to_binary(
+        anisodiff(img, niter=30, kappa=20), theshold_low, threshold_high
+    )
+    img_erosion = cv2.erode(binary_img, np.ones((5, 5), np.uint8), iterations=1)
+    labelled_img, num_features = scipy.ndimage.measurements.label(img_erosion)
+    return find_segment_centers(labelled_img, num_features, maxPts)
+
+
+def laceySearch(img, maxPts, theshold_low, threshold_high):
+    pts = find_lacey_holes(img, maxPts, theshold_low, threshold_high)
+    pts_sem = [Pt(x, img.shape[0] - y) for y, x in pts]
+    return pts_sem
