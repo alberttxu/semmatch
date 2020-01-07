@@ -47,7 +47,14 @@ def test_writeToNavFile():
     coords = [Pt(*coord) for coord in coords]
     mapID = "30-A"
     nav = openNavfile("nav.nav")
-    options = NavOptions(groupOption=0, groupRadius=123, pixelSize=1, numGroups=1, acquire=1)
+    options = NavOptions(
+        groupOption=0,
+        groupRadius=123,
+        pixelSize=1,
+        numGroups=1,
+        ptsPerGroup=8,
+        acquire=1,
+    )
     navPts = ptsToNavPts(coords, nav, mapID, startLabel=9000, options=options)
     newNavData = "AdocVersion = 2.00\n\n" + "".join(str(pt) for pt in navPts)
     with open("newNav.nav", "w") as f:
