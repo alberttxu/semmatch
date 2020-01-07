@@ -7,7 +7,7 @@ import PIL
 from PIL import Image, ImageFilter
 import scipy
 from scipy.ndimage.filters import gaussian_filter, maximum_filter
-import skimage
+import skimage.filters
 
 # ubiquitous Point type
 Pt = namedtuple("Pt", "x y")
