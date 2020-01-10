@@ -36,6 +36,7 @@ def main():
     parser.add_argument(
         "--param2", help="threshold for houghCircles", type=int, default=60
     )
+    parser.add_argument("--pixelSize", help="pixelSize in nm", type=float, required=True)
     parser.add_argument(
         "--laceySearch", help="automatic detection for lacey grid", action="store_true"
     )
@@ -79,7 +80,6 @@ def main():
     parser.add_argument(
         "--groupRadius", help="groupRadius in µm", type=float, default=7.0
     )
-    parser.add_argument("--pixelSize", help="pixelSize in nm", type=float, default=5.0)
     parser.add_argument(
         "--numGroups",
         help="number of groups for k-means groupOption",
@@ -127,10 +127,6 @@ def main():
             print(
                 "groupRadius will be ignored because groupOption is not 1 (groups by radius)"
             )
-        if pixelSize is not None:
-            print(
-                "pixelSize will be ignored because groupOption is not 1 (groups by radius)"
-            )
     if groupOption != 3 and numGroups is not None:
         print(
             "numGroups will be ignored because groupOption is not 3 (specify number of groups)"
@@ -170,7 +166,7 @@ def main():
 
     if args.houghCircles == True:
         print("using hough circles")
-        pts = houghCircles(image, param2=param2)
+        pts = houghCircles(image, pixelSize, param2=param2)
         if maxPts is not None:
             pts = getRandPts(pts, maxPts)
     elif args.laceySearch == True:

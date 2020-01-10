@@ -51,6 +51,7 @@ If $RepVal5 != 2        # if not a map item
 Endif
 MAP = $navLabel
 Echo Map Label: $MAP
+# load map into Q buffer
 SetUserSetting BufferToReadInto 16
 SetUserSetting LoadMapsUnbinned 1
 # uncheck Montage Controls "Align pieces in overview"
@@ -63,6 +64,7 @@ LoadNavMap
 # reduce image if larger than 2000x2000
 maxdimLimit = 2000
 ImageProperties Q width height
+pixelSize = $repVal5
 maxdim = $width
 If $width < $height
    maxdim = $height
@@ -72,7 +74,12 @@ If $maxdim < $maxdimLimit
    Copy Q A
    reduction = 1
 Else
-   reduction = $maxdim / $maxdimLimit
+   If $pixelSize < 40
+      reduction = 40 / $pixelSize
+      pixelSize = 40
+   Else
+      reduction = $maxdim / $maxdimLimit
+   Endif
    ReduceImage Q $reduction
 Endif
 Show Q

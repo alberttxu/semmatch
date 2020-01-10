@@ -246,7 +246,11 @@ def prefilter_before_hough(img):
     return img
 
 
-def houghCircles(img, param1=50, param2=60, minDist=30, minRadius=5, maxRadius=45):
+def houghCircles(img, pixelSize, param1=50, param2=60, minDistNm=600, minRadiusNm=600, maxRadiusNm=1300):
+    minRadius = int(minRadiusNm / pixelSize)
+    maxRadius = int(maxRadiusNm / pixelSize)
+    minDist = int(minDistNm / pixelSize)
+
     img = prefilter_before_hough(img)
 
     circles = cv2.HoughCircles(
