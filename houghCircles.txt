@@ -7,6 +7,9 @@ Debug = 0              # True = 1 ; False = 0
 param2 = 50   # hough threshold
 maxPts = 20   # randomly selected subset of all found points
 
+# maps will be dynamically binned down to the following pixel size
+downscaleToPixelSize = 40
+
 acquire = 1                                    # True = 1 ; False = 0
 groupOption = 2
     #    0 = no groups
@@ -74,11 +77,12 @@ If $maxdim < $maxdimLimit
    Copy Q A
    reduction = 1
 Else
-   If $pixelSize < 40
-      reduction = 40 / $pixelSize
-      pixelSize = 40
+   If $pixelSize < $downscaleToPixelSize
+      reduction = $downscaleToPixelSize / $pixelSize
+      pixelSize = $downscaleToPixelSize
    Else
       reduction = $maxdim / $maxdimLimit
+      pixelSize = $pixelSize * $reduction
    Endif
    ReduceImage Q $reduction
 Endif
@@ -102,7 +106,8 @@ RunInShell cmd $debugStr " "semmatch" \
 "--newLabel" "$newLabel" \
 "--groupOption" "$groupOption" \
 "--output" "$outputNav" \
-"--acquire" "$acquire" "
+"--acquire" "$acquire" \
+"--pixelSize" "$pixelSize" "
 
 MergeNavFile $outputNav
 If $alignChecked == 1
