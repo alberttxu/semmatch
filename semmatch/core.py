@@ -1,4 +1,5 @@
 from collections import namedtuple
+import logging
 import math
 
 import cv2
@@ -265,7 +266,9 @@ def houghCircles(img, pixelSize, param1=50, param2=60, minDistNm=600, minRadiusN
     )
     try:
         circles = np.uint16(np.around(circles))
-    except AttributeError:
+    except Exception as e:
+        logging.error('general exception in finding circles')
+        logging.error(e)
         circles = None
 
     if circles is not None:
