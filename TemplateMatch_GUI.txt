@@ -71,6 +71,7 @@ LoadNavMap
 # reduce image if larger than 2000x2000
 maxdimLimit = 2000
 ImageProperties Q width height
+pixelSize = $repVal5
 maxdim = $width
 If $width < $height
    maxdim = $height
@@ -105,7 +106,8 @@ RunInShell cmd $debugStr " "semmatch" \
 "--output" "$outputNav" \
 "--noBlurTemplate" \
 "--noBlurImage" \
-"--acquire" "$acquire" "
+"--acquire" "$acquire" \
+"--pixelSize" "$pixelSize" "
 
 MergeNavFile $outputNav
 If $alignChecked == 1
