@@ -14,16 +14,14 @@ def main():
     )
     from semmatch.autodoc import ptsToNavPts, createAutodoc, openNavfile
     from semmatch.groups import getRandPts
+    from semmatch.tsfit import getStageYparams, getZparams, createFakeAutodoc
 
     parser = argparse.ArgumentParser(description="template matching tool for SerialEM")
-    # required
-    parser.add_argument("--navfile", help="SerialEM nav file", required=True)
-    parser.add_argument("--image", help="jpg", required=True)
-    parser.add_argument("--mapLabel", help="label id", required=True)
-    parser.add_argument(
-        "--newLabel", help="starting label of added points", type=int, required=True
-    )
-    parser.add_argument("-o", "--output", help="output nav file", required=True)
+    parser.add_argument("--navfile", help="SerialEM nav file")
+    parser.add_argument("--image", help="jpg")
+    parser.add_argument("--mapLabel", help="label id")
+    parser.add_argument("--newLabel", help="starting label of added points", type=int)
+    parser.add_argument("-o", "--output", help="output nav file")
 
     # optional
     parser.add_argument("--gui", help="interactive gui mode", action="store_true")
@@ -36,7 +34,7 @@ def main():
     parser.add_argument(
         "--param2", help="threshold for houghCircles", type=int, default=60
     )
-    parser.add_argument("--pixelSize", help="pixelSize in nm", type=float, required=True)
+    parser.add_argument("--pixelSize", help="pixelSize in nm", type=float)
     parser.add_argument(
         "--laceySearch", help="automatic detection for lacey grid", action="store_true"
     )
@@ -92,6 +90,10 @@ def main():
     parser.add_argument("--noBlurImage", help="", action="store_true")
     parser.add_argument("--noBlurTemplate", help="", action="store_true")
 
+    parser.add_argument("--fitZ", nargs="+", type=float)
+    parser.add_argument("--fitStageY", nargs="+", type=float)
+    parser.add_argument("--fitAngles", nargs="+", type=float)
+
     args = parser.parse_args()
 
     navfile = args.navfile
@@ -117,6 +119,24 @@ def main():
     laceyThreshLow = args.laceyThreshLow
     laceyThreshHigh = args.laceyThreshHigh
     maxPts = args.maxPts
+    fitZ = args.fitZ
+    fitStageY = args.fitStageY
+    fitAngles = args.fitAngles
+
+    if fitZ is not None:
+        if fitAngles is None:
+            print("must provide --fitAngles")
+            exit()
+        params = getZparams(fitAngles, fitZ)
+        createFakeAutodoc(output, newLabel, params)
+        exit()
+    elif fitStageY is not None:
+        if fitAngles is None:
+            print("must provide --fitAngles")
+            exit()
+        params = getStageYparams(fitAngles, fitZ)
+        createFakeAutodoc(output, newLabel, params)
+        exit()
 
     # clear output file to prevent merging previous points
     createAutodoc(output, [])
