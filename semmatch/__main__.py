@@ -134,7 +134,7 @@ def main():
         if fitAngles is None:
             print("must provide --fitAngles")
             exit()
-        params = getStageYparams(fitAngles, fitZ)
+        params = getStageYparams(fitAngles, fitStageY)
         createFakeAutodoc(output, newLabel, params)
         exit()
 
