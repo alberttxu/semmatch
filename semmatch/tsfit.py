@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 from scipy.optimize import curve_fit
 
@@ -21,6 +23,8 @@ def createFakeAutodoc(outputfile, newLabel, params):
     fake_nav_pts = []
     for i, param in enumerate(params):
         label = newLabel + i
+        rand_x = 100 * random.random()
+        rand_y = 100 * random.random()
         fake_nav_pt = "\n".join(
             [
                 f"[Item = {label}]",
@@ -28,9 +32,9 @@ def createFakeAutodoc(outputfile, newLabel, params):
                 "NumPts = 1",
                 "Regis = 1",
                 "Type = 0",
-                "PtsX = 0",
-                f"PtsY = {i}",
-                f"StageXYZ = 0 {i} 0",
+                f"PtsX = {rand_x}",
+                f"PtsY = {rand_y}",
+                f"StageXYZ = {rand_x} {rand_y} 0",
                 f"Note = {param}",
             ]
         )
