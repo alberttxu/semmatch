@@ -7,8 +7,10 @@ import numpy as np
 import PIL
 from PIL import Image, ImageFilter
 import scipy
+from scipy import ndimage
 from scipy.ndimage.filters import gaussian_filter, maximum_filter
 import skimage.filters
+from skimage.morphology import convex_hull_image
 
 # ubiquitous Point type
 Pt = namedtuple("Pt", "x y")
@@ -107,59 +109,59 @@ def anisodiff(
     img, niter=10, kappa=50, gamma=0.1, step=(1.0, 1.0), option=1, ploton=False
 ):
     """
-        Anisotropic diffusion.
+    Anisotropic diffusion.
 
-        Usage:
-        imgout = anisodiff(im, niter, kappa, gamma, option)
+    Usage:
+    imgout = anisodiff(im, niter, kappa, gamma, option)
 
-        Arguments:
-                img    - input image
-                niter  - number of iterations
-                kappa  - conduction coefficient 20-100 ?
-                gamma  - max value of .25 for stability
-                step   - tuple, the distance between adjacent pixels in (y,x)
-                option - 1 Perona Malik diffusion equation No 1
-                         2 Perona Malik diffusion equation No 2
-                ploton - if True, the image will be plotted on every iteration
+    Arguments:
+            img    - input image
+            niter  - number of iterations
+            kappa  - conduction coefficient 20-100 ?
+            gamma  - max value of .25 for stability
+            step   - tuple, the distance between adjacent pixels in (y,x)
+            option - 1 Perona Malik diffusion equation No 1
+                     2 Perona Malik diffusion equation No 2
+            ploton - if True, the image will be plotted on every iteration
 
-        Returns:
-                imgout   - diffused image.
+    Returns:
+            imgout   - diffused image.
 
-        kappa controls conduction as a function of gradient.  If kappa is low
-        small intensity gradients are able to block conduction and hence diffusion
-        across step edges.  A large value reduces the influence of intensity
-        gradients on conduction.
+    kappa controls conduction as a function of gradient.  If kappa is low
+    small intensity gradients are able to block conduction and hence diffusion
+    across step edges.  A large value reduces the influence of intensity
+    gradients on conduction.
 
-        gamma controls speed of diffusion (you usually want it at a maximum of
-        0.25)
+    gamma controls speed of diffusion (you usually want it at a maximum of
+    0.25)
 
-        step is used to scale the gradients in case the spacing between adjacent
-        pixels differs in the x and y axes
+    step is used to scale the gradients in case the spacing between adjacent
+    pixels differs in the x and y axes
 
-        Diffusion equation 1 favours high contrast edges over low contrast ones.
-        Diffusion equation 2 favours wide regions over smaller ones.
+    Diffusion equation 1 favours high contrast edges over low contrast ones.
+    Diffusion equation 2 favours wide regions over smaller ones.
 
-        Reference:
-        P. Perona and J. Malik.
-        Scale-space and edge detection using ansotropic diffusion.
-        IEEE Transactions on Pattern Analysis and Machine Intelligence,
-        12(7):629-639, July 1990.
+    Reference:
+    P. Perona and J. Malik.
+    Scale-space and edge detection using ansotropic diffusion.
+    IEEE Transactions on Pattern Analysis and Machine Intelligence,
+    12(7):629-639, July 1990.
 
-        Original MATLAB code by Peter Kovesi
-        School of Computer Science & Software Engineering
-        The University of Western Australia
-        pk @ csse uwa edu au
-        <http://www.csse.uwa.edu.au>
+    Original MATLAB code by Peter Kovesi
+    School of Computer Science & Software Engineering
+    The University of Western Australia
+    pk @ csse uwa edu au
+    <http://www.csse.uwa.edu.au>
 
-        Translated to Python and optimised by Alistair Muldal
-        Department of Pharmacology
-        University of Oxford
-        <alistair.muldal@pharm.ox.ac.uk>
+    Translated to Python and optimised by Alistair Muldal
+    Department of Pharmacology
+    University of Oxford
+    <alistair.muldal@pharm.ox.ac.uk>
 
-        June 2000  original version.
-        March 2002 corrected diffusion eqn No 2.
-        July 2012 translated to Python
-        """
+    June 2000  original version.
+    March 2002 corrected diffusion eqn No 2.
+    July 2012 translated to Python
+    """
 
     # ...you could always diffuse each color channel independently if you
     # really want
@@ -202,8 +204,8 @@ def anisodiff(
 
         # conduction gradients (only need to compute one per dim!)
         if option == 1:
-            gS = np.exp(-(deltaS / kappa) ** 2.0) / step[0]
-            gE = np.exp(-(deltaE / kappa) ** 2.0) / step[1]
+            gS = np.exp(-((deltaS / kappa) ** 2.0)) / step[0]
+            gE = np.exp(-((deltaE / kappa) ** 2.0)) / step[1]
         elif option == 2:
             gS = 1.0 / (1.0 + (deltaS / kappa) ** 2.0) / step[0]
             gE = 1.0 / (1.0 + (deltaE / kappa) ** 2.0) / step[1]
@@ -247,7 +249,15 @@ def prefilter_before_hough(img):
     return img
 
 
-def houghCircles(img, pixelSize, param1=50, param2=60, minDistNm=600, minRadiusNm=600, maxRadiusNm=1300):
+def houghCircles(
+    img,
+    pixelSize,
+    param1=50,
+    param2=60,
+    minDistNm=600,
+    minRadiusNm=600,
+    maxRadiusNm=1300,
+):
     minRadius = int(minRadiusNm / pixelSize)
     maxRadius = int(maxRadiusNm / pixelSize)
     minDist = int(minDistNm / pixelSize)
@@ -267,7 +277,7 @@ def houghCircles(img, pixelSize, param1=50, param2=60, minDistNm=600, minRadiusN
     try:
         circles = np.uint16(np.around(circles))
     except Exception as e:
-        logging.error('general exception in finding circles')
+        logging.error("general exception in finding circles")
         logging.error(e)
         circles = None
 
@@ -309,5 +319,93 @@ def find_lacey_holes(img, maxPts, theshold_low, threshold_high):
 
 def laceySearch(img, maxPts, theshold_low, threshold_high):
     pts = find_lacey_holes(img, maxPts, theshold_low, threshold_high)
+    pts_sem = [Pt(x, img.shape[0] - y) for y, x in pts]
+    return pts_sem
+
+
+def is_good_mesh(
+    loc,
+    dilated_img,
+    min_border_pixels,
+    min_height_pixels,
+    min_width_pixels,
+    min_area_ratio=0.9,
+):
+    # check if too close to border
+    if (
+        loc[0].start < min_border_pixels
+        or loc[1].start < min_border_pixels
+        or dilated_img.shape[0] - loc[0].stop < min_border_pixels
+        or dilated_img.shape[1] - loc[1].stop < min_border_pixels
+    ):
+        return False
+
+    # check dimension ratio
+    height = loc[0].stop - loc[0].start
+    width = loc[1].stop - loc[1].start
+    if height < min_height_pixels and width < min_width_pixels:
+        return False
+    if max(height, width) > 1.5 * min(height, width):
+        return False
+
+    # check for occlusions by computing area ratio between image and convex hull
+    mesh = dilated_img[loc]
+    convex_hull = convex_hull_image(mesh)
+    if np.sum(mesh.astype(bool)) / np.sum(convex_hull) < min_area_ratio:
+        return False
+
+    return True
+
+
+"""
+min_border, min_heigth, min_width: in microns
+min_area_ratio: ratio of area between segmented image and convex hull
+pixelsize: in nm
+"""
+def findMeshes(
+    img,
+    pixelsize,
+    maxPts,
+    theshold_low,
+    threshold_high,
+    min_border=400,
+    min_height=45,
+    min_width=45,
+    min_area_ratio=0.92,
+):
+    # binarize image
+    binary_img = to_binary(img, theshold_low, threshold_high)
+    # erode image
+    eroded_img = cv2.erode(binary_img, np.ones((3, 3), np.uint8), iterations=1)
+    # dilate image
+    dilated_img = cv2.dilate(eroded_img, np.ones((5, 5), np.uint8), iterations=3)
+    # get mesh labels
+    labelled_img, num_meshes = ndimage.label(dilated_img)
+    locs = ndimage.find_objects(labelled_img)
+    # filter out bad meshes
+    good_labels = []
+    pixelsize_um = pixelsize / 1000
+    min_border_pixels = min_border / pixelsize_um
+    min_height_pixels = min_height / pixelsize_um
+    min_width_pixels = min_width / pixelsize_um
+    print(min_border_pixels, min_width_pixels)
+    for label, loc in zip(range(1, num_meshes + 1), locs):
+        if is_good_mesh(
+            loc,
+            dilated_img,
+            min_border_pixels,
+            min_height_pixels,
+            min_width_pixels,
+            min_area_ratio,
+        ):
+            good_labels.append(label)
+    # return centers of meshes (int)
+    centers = ndimage.center_of_mass(dilated_img, labelled_img, good_labels)
+    centers = [(int(x[0]), int(x[1])) for x in centers]
+    return centers
+
+
+def meshSearch(img, pixelsize, maxPts, theshold_low, threshold_high, minBorder, minSize):
+    pts = findMeshes(img, pixelsize, maxPts, theshold_low, threshold_high, minBorder, minSize, minSize)
     pts_sem = [Pt(x, img.shape[0] - y) for y, x in pts]
     return pts_sem
