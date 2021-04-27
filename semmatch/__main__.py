@@ -1,236 +1,212 @@
-def main():
-    import argparse
-    import sys
+import argparse
 
-    import imageio
+import imageio
 
-    from semmatch.core import (
-        Pt,
-        NavOptions,
-        templateMatch,
-        imresize,
-        houghCircles,
-        laceySearch,
-    )
-    from semmatch.autodoc import ptsToNavPts, createAutodoc, openNavfile
-    from semmatch.groups import getRandPts
-    from semmatch.tsfit import getStageYparams, getZparams, createFakeAutodoc
+from semmatch.core import (
+    Pt,
+    NavOptions,
+    templateMatch,
+    imresize,
+    houghCircles,
+    laceySearch,
+    meshSearch
+)
+from semmatch.autodoc import ptsToNavPts, createAutodoc, openNavfile
+from semmatch.groups import getRandPts
 
+
+def parse_commandline():
     parser = argparse.ArgumentParser(description="template matching tool for SerialEM")
-    parser.add_argument("--navfile", help="SerialEM nav file")
-    parser.add_argument("--image", help="jpg")
-    parser.add_argument("--mapLabel", help="label id")
-    parser.add_argument("--newLabel", help="starting label of added points", type=int)
-    parser.add_argument("-o", "--output", help="output nav file")
-
-    # optional
-    parser.add_argument("--gui", help="interactive gui mode", action="store_true")
     parser.add_argument(
+        "--navfile", help="SerialEM Navigator session file", required=True
+    )
+    parser.add_argument("--mapLabel", help="label of map item", required=True)
+    parser.add_argument(
+        "--newLabel", help="starting label of added points", type=int, required=True
+    )
+    parser.add_argument(
+        "--acquire",
+        help="flag to set acquire tag (A) on found points",
+        action="store_true",
+    )
+    parser.add_argument("-o", "--output", help="output nav file", required=True)
+    parser.add_argument(
+        "--pixelsize", help="pixelsize of input image in nm", type=float, required=True
+    )
+    parser.add_argument("--image", help="input jpg image")
+
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    parser_templateMatch = subparsers.add_parser(
+        "templateMatch", help="template matching"
+    )
+    parser_laceySearch = subparsers.add_parser(
+        "laceySearch", help="automatic detection for lacey grid"
+    )
+    parser_houghCircles = subparsers.add_parser(
+        "houghCircles", help="automatically find holes"
+    )
+    parser_findMeshes = subparsers.add_parser(
+        "findMeshes", help="automatically find meshes"
+    )
+
+    parser_templateMatch.add_argument(
+        "--gui", help="interactive gui mode", action="store_true"
+    )
+    parser_templateMatch.add_argument(
         "--template", help="template image to use; required in non-gui mode"
     )
-    parser.add_argument(
-        "--houghCircles", help="automatic detection for holey grid", action="store_true"
-    )
-    parser.add_argument(
-        "--param2", help="threshold for houghCircles", type=int, default=60
-    )
-    parser.add_argument("--pixelSize", help="pixelSize in nm", type=float)
-    parser.add_argument(
-        "--laceySearch", help="automatic detection for lacey grid", action="store_true"
-    )
-    parser.add_argument(
-        "--laceyThreshLow",
-        help="lower threshold for laceySearch",
-        type=int,
-        default=195,
-    )
-    parser.add_argument(
-        "--laceyThreshHigh",
-        help="upper threshold for laceySearch",
-        type=int,
-        default=245,
-    )
-    parser.add_argument(
-        "--maxPts",
-        help="limit number of pts found via houghCircles or laceySearch",
-        type=int,
-    )
-    parser.add_argument(
+    parser_templateMatch.add_argument(
         "--groupOption",
         help="grouping option for points;"
         + "0 = no groups; "
-        + "1 = groups based on radius (requires --groupRadius and --pixelSize);"
+        + "1 = groups based on radius (requires --groupRadius and --pixelsize);"
         + "2 = all points as one group;"
         + "3 = specify number of groups;"
         + "4 = specify number of points per group",
         type=int,
         default=0,
     )
-    parser.add_argument(
+    parser_templateMatch.add_argument(
         "--threshold", help="threshold value for zncc", type=float, default=0.8
     )
-    parser.add_argument(
+    parser_templateMatch.add_argument(
         "--reduction", help="external reduction factor", type=float, default=1.0
     )
-    parser.add_argument(
-        "--acquire", help="mark points with acquire flag", type=int, default=1
-    )
-    parser.add_argument(
+    parser_templateMatch.add_argument(
         "--groupRadius", help="groupRadius in µm", type=float, default=7.0
     )
-    parser.add_argument(
+    parser_templateMatch.add_argument(
         "--numGroups",
         help="number of groups for k-means groupOption",
         type=int,
         default=10,
     )
-    parser.add_argument(
+    parser_templateMatch.add_argument(
         "--ptsPerGroup", help="specify number of points per group", type=int, default=8
     )
-    parser.add_argument("--noBlurImage", help="", action="store_true")
-    parser.add_argument("--noBlurTemplate", help="", action="store_true")
+    parser_templateMatch.add_argument("--blurImage", help="", action="store_true")
+    parser_templateMatch.add_argument("--blurTemplate", help="", action="store_true")
 
-    parser.add_argument("--fitZ", nargs="+", type=float)
-    parser.add_argument("--fitStageY", nargs="+", type=float)
-    parser.add_argument("--fitAngles", nargs="+", type=float)
+    parser_laceySearch.add_argument(
+        "--low", help="lower threshold cutoff", type=int, default=195
+    )
+    parser_laceySearch.add_argument(
+        "--high", help="upper threshold cutoff", type=int, default=245
+    )
+    parser_laceySearch.add_argument("--maxPts", type=int, required=True)
+
+    parser_houghCircles.add_argument("--param2", type=int, default=60)
+    parser_houghCircles.add_argument("--maxPts", type=int, required=True)
+
+    parser_findMeshes.add_argument('--low', help="low cutoff", type=int, default=25)
+    parser_findMeshes.add_argument('--high', help="high cutoff", type=int, default=230)
+    parser_findMeshes.add_argument(
+        "--minSize",
+        help="avoid meshes smaller than this length (um) in either dimension",
+        type=float,
+        default=45,
+    )
+    parser_findMeshes.add_argument(
+        "--minBorder",
+        help="avoid searching near the edge of the montage by this distance (um)",
+        type=float,
+        default=400,
+    )
+    parser_findMeshes.add_argument("--maxPts", type=int, required=True)
 
     args = parser.parse_args()
+    return args
 
-    navfile = args.navfile
-    image = args.image
-    reduction = args.reduction
-    mapLabel = args.mapLabel
-    newLabel = args.newLabel
-    output = args.output
-    template = args.template
-    threshold = args.threshold
-    groupOption = args.groupOption
-    groupRadius = args.groupRadius
-    pixelSize = args.pixelSize
-    numGroups = args.numGroups
-    ptsPerGroup = args.ptsPerGroup
-    acquire = args.acquire
-    blurImage = not args.noBlurImage
-    blurTemplate = not args.noBlurTemplate
-    options = NavOptions(
-        groupOption, groupRadius, pixelSize, numGroups, ptsPerGroup, acquire
-    )
-    param2 = args.param2
-    laceyThreshLow = args.laceyThreshLow
-    laceyThreshHigh = args.laceyThreshHigh
-    maxPts = args.maxPts
-    fitZ = args.fitZ
-    fitStageY = args.fitStageY
-    fitAngles = args.fitAngles
 
-    if fitZ is not None:
-        if fitAngles is None:
-            print("must provide --fitAngles")
-            exit()
-        params = getZparams(fitAngles, fitZ)
-        createFakeAutodoc(output, newLabel, params)
-        exit()
-    elif fitStageY is not None:
-        if fitAngles is None:
-            print("must provide --fitAngles")
-            exit()
-        params = getStageYparams(fitAngles, fitStageY)
-        createFakeAutodoc(output, newLabel, params)
-        exit()
+def main():
+    args = parse_commandline()
 
     # clear output file to prevent merging previous points
-    createAutodoc(output, [])
+    createAutodoc(args.output, [])
 
-    # unnecessary options messages
-    if groupOption != 1:
-        if groupRadius is not None:
-            print(
-                "groupRadius will be ignored because groupOption is not 1 (groups by radius)"
-            )
-    if groupOption != 3 and numGroups is not None:
-        print(
-            "numGroups will be ignored because groupOption is not 3 (specify number of groups)"
-        )
-    if groupOption != 4 and ptsPerGroup is not None:
-        print(
-            "ptsPerGroup will be ignored because groupOption is not 4 (specify number of points per group)"
-        )
-
-    nav = openNavfile(navfile)
-    if mapLabel not in nav:
-        print("could not find map label: %s; aborting" % mapLabel)
+    nav = openNavfile(args.navfile)
+    if args.mapLabel not in nav:
+        print("could not find map label: %s; aborting" % args.mapLabel)
         exit()
     elif not (
-        "Regis" in nav[mapLabel]
-        and "MapID" in nav[mapLabel]
-        and "StageXYZ" in nav[mapLabel]
+        "Regis" in nav[args.mapLabel]
+        and "MapID" in nav[args.mapLabel]
+        and "StageXYZ" in nav[args.mapLabel]
     ):
         print(
             "either Regis, MapID, and/or StageXYZ missing in section labeled %s; aborting"
-            % mapLabel
+            % args.mapLabel
         )
         exit()
 
-    # read and downsize images if necessary
-    image = imageio.imread(image)
-    if template is not None:
-        try:
-            template = imageio.imread(template)
-            template = imresize(template, 1 / (reduction))
-        except Exception as e:
-            print(e)
-            print(
-                "error reading in template %s; continuing without template" % template
-            )
+    image = imageio.imread(args.image)
+
+    print(args.command)
+
+    #if args.template is not None:
+    if args.command == "templateMatch":
+        options = NavOptions(
+            args.groupOption,
+            args.groupRadius,
+            args.pixelsize,
+            args.numGroups,
+            args.ptsPerGroup,
+            int(args.acquire),
+        )
+
+        if args.template is not None:
+            template = imageio.imread(args.template)
+            template = imresize(template, 1 / (args.reduction))
+        else:
             template = None
 
-    if args.houghCircles == True:
-        print("using hough circles")
-        pts = houghCircles(image, pixelSize, param2=param2)
-        if maxPts is not None:
-            pts = getRandPts(pts, maxPts)
-    elif args.laceySearch == True:
-        if maxPts == None:
-            maxPts = 999
-        pts = laceySearch(image, maxPts, laceyThreshLow, laceyThreshHigh)
-    elif args.gui == True:
-        print("using template matching gui")
-        import semmatch.gui
-
-        pts, options = semmatch.gui.main(
-            image,
-            template,
-            threshold,
-            options,
-            blurImage=blurImage,
-            blurTemplate=blurTemplate,
-        )
-        if options.groupRadius is None:
-            print("invalid group radius; aborting")
-            exit()
-        if options.pixelSize is None:
-            print("invalid pixel size; aborting")
-            exit()
+        if args.gui == True:
+            print("using template matching gui")
+            import semmatch.gui
+            pts, options = semmatch.gui.main(
+                image,
+                template,
+                args.threshold,
+                options,
+                args.blurImage,
+                args.blurTemplate,
+            )
+        else:
+            print("using template matching non gui")
+            if args.template is None:
+                print("non-gui option must specify template")
+                exit()
+            pts = templateMatch(
+                image,
+                template,
+                args.threshold,
+                args.blurImage,
+                args.blurTemplate,
+            )
+        # compensate round off error from reduction
+        pts = [Pt(x + 2, y) for x, y in pts]
+        pts = [Pt(int(args.reduction * x), int(args.reduction * y)) for x, y in pts]
     else:
-        print("using template matching non gui")
-        if template is None:
-            print("non-gui option must specify template")
-            exit()
-        pts = templateMatch(
-            image, template, threshold, blurImage=blurImage, blurTemplate=blurTemplate
+        options = NavOptions(
+            0,
+            None,
+            args.pixelsize,
+            None,
+            None,
+            int(args.acquire),
         )
 
-    # compensate round off error from reduction
-    pts = [Pt(x + 2, y) for x, y in pts]
-    pts = [Pt(int(reduction * x), int(reduction * y)) for x, y in pts]
+    if args.command == "houghCircles":
+        pts = houghCircles(image, args.pixelsize, param2=args.param2)
+        pts = getRandPts(pts, args.maxPts)
+    elif args.command == "laceySearch":
+        pts = laceySearch(image, args.maxPts, args.laceyThreshLow, args.laceyThreshHigh)
+    elif args.command == "findMeshes":
+        pts = meshSearch(image, args.pixelsize, args.maxPts, args.low, args.high, args.minBorder, args.minSize)
 
     if len(pts) == 0:
-        print("no matches found; exiting without creating %s" % output)
+        print("no matches found; exiting without creating %s" % args.output)
         exit()
-    navPts = ptsToNavPts(pts, nav, mapLabel, newLabel, options)
-    createAutodoc(output, navPts)
-    print("%s created" % output)
-
-
-if __name__ == "__main__":
-    main()
+    navPts = ptsToNavPts(pts, nav, args.mapLabel, args.newLabel, options)
+    createAutodoc(args.output, navPts)
+    print("%s created" % args.output)

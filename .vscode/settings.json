@@ -1,0 +1,4 @@
+{
+    "python.pythonPath": "/Users/albertxu/miniconda3/envs/semmatch/bin/python",
+    "python.formatting.provider": "black"
+}
