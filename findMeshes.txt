@@ -1,17 +1,19 @@
-ScriptName houghCircles
+ScriptName findMeshes
 
-# If something goes wrong, set Debug = 1
-Debug = 0              # True = 1 ; False = 0
+Debug = 1
 
 ### semmatch arguments
-param2 = 40         # hough threshold
-maxPts = 20         # return subset of all found points
+maxPts = 20            # return subset of all found points
+minSize = 30           # (microns) - find squares at least this size
+minBorder = 400    # (microns) - find squares at least this far away from the edge of the map
+
+# maps will be dynamically binned down to the following pixel size
 
 acquire = 1                                    # True = 1 ; False = 0
 
 # names of temporary files used by semmatch
 outputNav = semmatch_nav.nav
-image = MMM.jpg
+image = LMM.jpg
 
 ReportIfNavOpen
 If $reportedValue1 != 2
@@ -45,6 +47,7 @@ If $RepVal5 != 2        # if not a map item
 Endif
 MAP = $navLabel
 Echo Map Label: $MAP
+# load map into Q buffer
 SetUserSetting BufferToReadInto 16
 SetUserSetting LoadMapsUnbinned 1
 # uncheck Montage Controls "Align pieces in overview"
@@ -54,22 +57,11 @@ If $alignChecked == 1
 Endif
 LoadNavMap
 
-# reduce image if original pixelsize < 40 nm
-normalizedPixelsize = 40
-ImageProperties Q
-origPixelsize = $repVal5
-
-If $origPixelsize < $normalizedPixelsize
-   reduction = $normalizedPixelsize / $origPixelsize
-   ReduceImage Q $reduction
-Else
-   Copy Q A
-   reduction = 1
-Endif
-Show Q
-
-ImageProperties A
+ImageProperties Q width height
 pixelsize = $repVal5
+
+Copy Q A
+Show Q
 
 ## make a jpeg image
 SaveToOtherFile A JPG JPG $image
@@ -87,7 +79,7 @@ semmatch \
 --acquire $acquire \
 --image $image \
 --pixelsize $pixelsize \
-houghCircles --reduction $reduction --maxPts $maxPts --param2 $param2 "
+findMeshes --maxPts $maxPts --minSize $minSize "
 
 MergeNavFile $outputNav
 If $alignChecked == 1

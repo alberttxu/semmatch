@@ -26,8 +26,9 @@ def parse_commandline():
     )
     parser.add_argument(
         "--acquire",
-        help="flag to set acquire tag (A) on found points",
-        action="store_true",
+        help="mark imported points with acquire (A) tag; must be 0 or 1",
+        type=int,
+        required=True
     )
     parser.add_argument("-o", "--output", help="output nav file", required=True)
     parser.add_argument(
@@ -97,6 +98,7 @@ def parse_commandline():
 
     parser_houghCircles.add_argument("--param2", type=int, default=60)
     parser_houghCircles.add_argument("--maxPts", type=int, required=True)
+    parser_houghCircles.add_argument("--reduction", type=float, required=True)
 
     parser_findMeshes.add_argument('--low', help="low cutoff", type=int, default=25)
     parser_findMeshes.add_argument('--high', help="high cutoff", type=int, default=230)
@@ -104,7 +106,7 @@ def parse_commandline():
         "--minSize",
         help="avoid meshes smaller than this length (um) in either dimension",
         type=float,
-        default=45,
+        default=60,
     )
     parser_findMeshes.add_argument(
         "--minBorder",
@@ -115,11 +117,21 @@ def parse_commandline():
     parser_findMeshes.add_argument("--maxPts", type=int, required=True)
 
     args = parser.parse_args()
+
+    if args.acquire not in (0, 1):
+        print("--acquire argument must be either 0 or 1")
+        exit()
+
+    if args.command in ("findMeshes", "houghCircles", "laceySearch") and args.maxPts < 1:
+        print("--maxPts cannot be less than 1")
+        exit()
+
     return args
 
 
 def main():
     args = parse_commandline()
+    print(args)
 
     # clear output file to prevent merging previous points
     createAutodoc(args.output, [])
@@ -141,9 +153,6 @@ def main():
 
     image = imageio.imread(args.image)
 
-    print(args.command)
-
-    #if args.template is not None:
     if args.command == "templateMatch":
         options = NavOptions(
             args.groupOption,
@@ -198,6 +207,7 @@ def main():
 
     if args.command == "houghCircles":
         pts = houghCircles(image, args.pixelsize, param2=args.param2)
+        pts = [(int(args.reduction * p[0]), int(args.reduction * p[1])) for p in pts]
         pts = getRandPts(pts, args.maxPts)
     elif args.command == "laceySearch":
         pts = laceySearch(image, args.maxPts, args.laceyThreshLow, args.laceyThreshHigh)

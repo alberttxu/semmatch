@@ -1,4 +1,4 @@
 {
-    "python.pythonPath": "/Users/albertxu/miniconda3/envs/semmatch/bin/python",
+    "python.pythonPath": "C:\\Users\\alber\\miniconda3\\envs\\semmatch\\python.exe",
     "python.formatting.provider": "black"
 }

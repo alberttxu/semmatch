@@ -6,7 +6,6 @@ import cv2
 import numpy as np
 import PIL
 from PIL import Image, ImageFilter
-import scipy
 from scipy import ndimage
 from scipy.ndimage.filters import gaussian_filter, maximum_filter
 import skimage.filters
@@ -302,7 +301,7 @@ def find_segment_centers(labelled_img, num_features, maxPts):
         segments.append((label, segment, area))
     segments = sorted(segments, key=lambda x: x[2])[::-1][:maxPts]
     for label, segment, _ in segments:
-        center = scipy.ndimage.measurements.center_of_mass(segment)
+        center = ndimage.center_of_mass(segment)
         center = (int(center[0]), int(center[1]))
         results.append(center)
     return results
@@ -357,11 +356,12 @@ def is_good_mesh(
     return True
 
 
-"""
-min_border, min_heigth, min_width: in microns
-min_area_ratio: ratio of area between segmented image and convex hull
-pixelsize: in nm
-"""
+def getMeshSize(loc, dilated_img):
+    """ Returns the area of a mesh in number of pixels """
+    mesh = dilated_img[loc]
+    return np.sum(mesh.astype(bool))
+
+
 def findMeshes(
     img,
     pixelsize,
@@ -373,6 +373,11 @@ def findMeshes(
     min_width=45,
     min_area_ratio=0.92,
 ):
+    """
+    min_border, min_heigth, min_width: in microns
+    min_area_ratio: ratio of area between segmented image and convex hull
+    pixelsize: in nm
+    """
     # binarize image
     binary_img = to_binary(img, theshold_low, threshold_high)
     # erode image
@@ -383,12 +388,11 @@ def findMeshes(
     labelled_img, num_meshes = ndimage.label(dilated_img)
     locs = ndimage.find_objects(labelled_img)
     # filter out bad meshes
-    good_labels = []
+    good_meshes = []
     pixelsize_um = pixelsize / 1000
     min_border_pixels = min_border / pixelsize_um
     min_height_pixels = min_height / pixelsize_um
     min_width_pixels = min_width / pixelsize_um
-    print(min_border_pixels, min_width_pixels)
     for label, loc in zip(range(1, num_meshes + 1), locs):
         if is_good_mesh(
             loc,
@@ -398,9 +402,22 @@ def findMeshes(
             min_width_pixels,
             min_area_ratio,
         ):
-            good_labels.append(label)
+            size = getMeshSize(loc, dilated_img)
+            good_meshes.append((label, size))
+
+    good_meshes.sort(key=lambda x: x[1])
+    labels = [x[0] for x in good_meshes]
+    if maxPts == 1:
+        new_labels = labels[len(labels)//2]
+        labels = new_labels
+    elif maxPts < len(labels):
+        new_labels = []
+        for i in range(maxPts):
+            j = i * int((len(labels) - 1) / (maxPts-1))
+            new_labels.append(labels[j])
+        labels = list(set(new_labels))
     # return centers of meshes (int)
-    centers = ndimage.center_of_mass(dilated_img, labelled_img, good_labels)
+    centers = ndimage.center_of_mass(dilated_img, labelled_img, labels)
     centers = [(int(x[0]), int(x[1])) for x in centers]
     return centers
 
