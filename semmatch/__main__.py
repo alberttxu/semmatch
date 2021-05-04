@@ -1,6 +1,7 @@
 import argparse
 
 import imageio
+import PIL
 
 from semmatch.core import (
     Pt,
@@ -151,6 +152,7 @@ def main():
         )
         exit()
 
+    PIL.Image.MAX_IMAGE_PIXELS = None
     image = imageio.imread(args.image)
 
     if args.command == "templateMatch":
