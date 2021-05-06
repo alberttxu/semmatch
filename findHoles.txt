@@ -1,11 +1,11 @@
-ScriptName houghCircles
+ScriptName findHoles
 
 # If something goes wrong, set Debug = 1
 Debug = 0              # True = 1 ; False = 0
 
 ### semmatch arguments
 param2 = 40         # hough threshold
-maxPts = 20         # return subset of all found points
+maxPts = 999         # return subset of all found points
 
 acquire = 1                                    # True = 1 ; False = 0
 
@@ -87,7 +87,7 @@ semmatch \
 --acquire $acquire \
 --image $image \
 --pixelsize $pixelsize \
-houghCircles --reduction $reduction --maxPts $maxPts --param2 $param2 "
+findHoles --reduction $reduction --maxPts $maxPts --param2 $param2 "
 
 MergeNavFile $outputNav
 If $alignChecked == 1

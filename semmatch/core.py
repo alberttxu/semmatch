@@ -250,16 +250,27 @@ def prefilter_before_hough(img):
 
 def houghCircles(
     img,
-    pixelSize,
+    pixelsize,
     param1=50,
-    param2=60,
+    param2=40,
     minDistNm=600,
     minRadiusNm=600,
     maxRadiusNm=1300,
+    minBorderUm=4,
 ):
-    minRadius = int(minRadiusNm / pixelSize)
-    maxRadius = int(maxRadiusNm / pixelSize)
-    minDist = int(minDistNm / pixelSize)
+    """
+    Find holes using hough transform.
+    param1: leave as is
+    param2: circularity threshold (good range: 35-45)
+    minDistNm: enforce distance between adjacent holes
+    minRadiusNm: reject holes smaller than this radius
+    maxRadiusNm: reject holes larger than this radius
+    minBorderUm: reject holes too close to the edge of the map (in microns)
+    """
+
+    minRadius = int(minRadiusNm / pixelsize)
+    maxRadius = int(maxRadiusNm / pixelsize)
+    minDist = int(minDistNm / pixelsize)
 
     img = prefilter_before_hough(img)
 
@@ -281,7 +292,16 @@ def houghCircles(
         circles = None
 
     if circles is not None:
-        pts = [(x, img.shape[0] - y) for x, y in circles[0][:, :2]]
+        pts = []
+        border = minBorderUm / (pixelsize / 1000)
+        for x, y in circles[0][:, :2]:
+            if (
+                x > border
+                and x < img.shape[1] - border
+                and y > border
+                and y < img.shape[0] - border
+            ):
+                pts.append((x, img.shape[0] - y))
     else:
         pts = []
 
@@ -356,8 +376,8 @@ def is_good_mesh(
     return True
 
 
-def getMeshSize(loc, dilated_img):
-    """ Returns the area of a mesh in number of pixels """
+def getSegmentArea(loc, dilated_img):
+    """Returns the area of a mesh in number of pixels"""
     mesh = dilated_img[loc]
     return np.sum(mesh.astype(bool))
 
@@ -366,7 +386,7 @@ def findMeshes(
     img,
     pixelsize,
     maxPts,
-    theshold_low,
+    threshold_low,
     threshold_high,
     min_border=400,
     min_height=45,
@@ -379,7 +399,7 @@ def findMeshes(
     pixelsize: in nm
     """
     # binarize image
-    binary_img = to_binary(img, theshold_low, threshold_high)
+    binary_img = to_binary(img, threshold_low, threshold_high)
     # erode image
     eroded_img = cv2.erode(binary_img, np.ones((3, 3), np.uint8), iterations=1)
     # dilate image
@@ -402,18 +422,18 @@ def findMeshes(
             min_width_pixels,
             min_area_ratio,
         ):
-            size = getMeshSize(loc, dilated_img)
+            size = getSegmentArea(loc, dilated_img)
             good_meshes.append((label, size))
 
     good_meshes.sort(key=lambda x: x[1])
     labels = [x[0] for x in good_meshes]
     if maxPts == 1:
-        new_labels = labels[len(labels)//2]
+        new_labels = labels[len(labels) // 2]
         labels = new_labels
     elif maxPts < len(labels):
         new_labels = []
         for i in range(maxPts):
-            j = i * int((len(labels) - 1) / (maxPts-1))
+            j = i * int((len(labels) - 1) / (maxPts - 1))
             new_labels.append(labels[j])
         labels = list(set(new_labels))
     # return centers of meshes (int)
@@ -422,7 +442,77 @@ def findMeshes(
     return centers
 
 
-def meshSearch(img, pixelsize, maxPts, theshold_low, threshold_high, minBorder, minSize):
-    pts = findMeshes(img, pixelsize, maxPts, theshold_low, threshold_high, minBorder, minSize, minSize)
+def meshSearch(
+    img, pixelsize, maxPts, theshold_low, threshold_high, minBorder, minSize
+):
+    pts = findMeshes(
+        img,
+        pixelsize,
+        maxPts,
+        theshold_low,
+        threshold_high,
+        minBorder,
+        minSize,
+        minSize,
+    )
     pts_sem = [Pt(x, img.shape[0] - y) for y, x in pts]
     return pts_sem
+
+
+def is_gold_mesh(img: np.ndarray, low=20, high=230, decision_thresh=120):
+    loc = np.where((img > low) & (img < high))
+    return np.mean(img[loc]) < decision_thresh
+
+
+is_good_hole_gold = is_good_mesh
+
+
+def findHoles_gold(
+    img, pixelsize, threshold_low=150, threshold_high=256, min_border=5, min_size=0.7
+):
+    """Same algorithm as findMeshes
+    minBorder: in microns
+    pixelsize: in nm
+    """
+    # binarize image
+    binary_img = to_binary(img, threshold_low, threshold_high)
+    # erode image
+    eroded_img = cv2.erode(binary_img, np.ones((3, 3), np.uint8), iterations=1)
+    # dilate image
+    dilated_img = cv2.dilate(eroded_img, np.ones((5, 5), np.uint8), iterations=3)
+    # get labels
+    labelled_img, num_holes = ndimage.label(dilated_img)
+    locs = ndimage.find_objects(labelled_img)
+    # filter out bad holes
+    good_holes = []
+    pixelsize_um = pixelsize / 1000
+    min_border_pixels = min_border / pixelsize_um
+    min_size_pixels = min_size / pixelsize_um
+
+    for label, loc in zip(range(1, num_holes + 1), locs):
+        if is_good_hole_gold(
+            loc,
+            dilated_img,
+            min_border_pixels,
+            min_size_pixels,
+            min_size_pixels,
+        ):
+            size = getSegmentArea(loc, dilated_img)
+            good_holes.append((label, size))
+
+    labels = [x[0] for x in good_holes]
+    # return centers of holes (int)
+    centers = ndimage.center_of_mass(dilated_img, labelled_img, labels)
+    centers = [(int(x[0]), int(x[1])) for x in centers]
+    return centers
+
+
+def findHoles(img, pixelsize, param2):
+    if is_gold_mesh(img):
+        print("detected gold grid, using specialized algorithm for gold")
+        pts = findHoles_gold(img, pixelsize)
+        pts_sem = [Pt(x, img.shape[0] - y) for y, x in pts]
+        return pts_sem
+    else:
+        print("detected non-gold grid, using hough transform algorithm")
+        return houghCircles(img, pixelsize, param2=param2)
